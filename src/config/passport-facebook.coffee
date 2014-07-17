@@ -7,7 +7,7 @@ module.exports = (passport)->
   passport.use new FacebookStrategy
     clientID: passportConfig.facebookAppID
     clientSecret: passportConfig.facebookAppSecret
-    callbackURL: "http://localhost:3030"
+    callbackURL: passportConfig.facebookRedirectUrl
   , (accessToken, refreshToken, profile, done)->
     
     Member.findOne

@@ -11,6 +11,7 @@ bodyParser = require 'body-parser'
 mongoose = require 'mongoose'
 mysql = require 'mysql'
 socketIO = require 'socket.io'
+errorParser = require 'error-message-parser'
 memoryStore = new session.MemoryStore
 sessionBinder = require "#{__dirname}/lib/session.binder"
 dbConfig = require "#{__dirname}/config/db.json"
@@ -49,9 +50,21 @@ app.use passport.session()
 app.use csrf()
 app.use favicon("#{__dirname}/public/favicon.ico")
 app.use express.static(path.join(__dirname, 'public'))
+app.use errorParser.Parser
+  cwd: "#{__dirname}/errorMessages"
+  lang: 'zh-TW'
 
 # Passport Middleware
 app.use '/auth', passport.router
+
+app.get '/csrf', (req, res)->
+  try
+    token = req.csrfToken()
+    res.json
+      status: true
+      token: token
+  catch e
+    res.sendError 1
 
 app.use '/', (req, res)->
   console.log 'csrf', req.csrfToken()
