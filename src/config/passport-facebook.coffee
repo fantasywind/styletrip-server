@@ -19,7 +19,7 @@ module.exports = (passport)->
         member = new Member
           facebookID: profile.id
           facebookAccessToken: accessToken
-          name: profile.name
+          name: profile.displayName
         member.save (err, member)->
           return done err if err
 
@@ -39,12 +39,12 @@ module.exports = (passport)->
             else
               member.facebookID = profile.id
               member.facebookAccessToken = accessToken
-              member.name = profile.name if !member.name or member.name is ''
+              member.name = profile.displayName if !member.name or member.name is ''
               member.save (err, member)->
                 return done err if err
 
                 done null, member
         else
           createMember()
-
-      done null, member
+      else
+        done null, member
