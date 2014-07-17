@@ -1,6 +1,14 @@
 {
   "1": {
     "level": 3,
-    "msg": "Cannot fetch csrf token."
+    "msg": "無法取得 csrf 密鑰。"
+  },
+  "401": {
+    "level": 3,
+    "msg": "伺服器資料庫錯誤。"
+  },
+  "402": {
+    "level": 2,
+    "msg": "找不到會員資料。"
   }
 }

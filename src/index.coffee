@@ -67,8 +67,6 @@ app.get '/csrf', (req, res)->
     res.sendError 1
 
 app.use '/', (req, res)->
-  console.log 'csrf', req.csrfToken()
-  console.log 'session', req.session
   res.json
     status: true
     msg: 'api server is running'
@@ -98,10 +96,13 @@ io = socketIO server
 
 # Bind Session
 io.use (socket, next)-> sessionBinder cookieParser, memoryStore, socket, next
+io.use passport.socket(errorParser)
 
 # Socket Connection
 io.on 'connection', (socket)->
-  console.log 'Connection!!'
+  console.log 'User Connected.'
+  socket.on 'error', (err)->
+    console.log 'Socket Error:', err
   socket.on 'disconnect', ->
     console.log 'Client disconnected.'
 server.listen app.get('port'), ->
