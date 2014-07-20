@@ -42,7 +42,7 @@ passport.socket = (errorParser)->
         socket.emit 'logined',
           facebookID: user.facebookID
           name: user.name
-      else if socket.session.passport.user
+      else if socket.session.passport and socket.session.passport.user
         Member.findById socket.session.passport.user, (err, user)->
           if err
             socket.emit 'failed', errorParser.generateError 401, err
