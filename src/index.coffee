@@ -15,7 +15,11 @@ errorParser = require 'error-message-parser'
 memoryStore = new session.MemoryStore
 sessionBinder = require "#{__dirname}/lib/session.binder"
 dbConfig = require "#{__dirname}/config/db.json"
+stConfig = require "#{__dirname}/config/styletrip.json"
 st = require "#{__dirname}/lib/styletrip"
+stEngine = new st.Connection
+  port: stConfig.engine.PORT
+  host: stConfig.engine.HOST
 
 # MySQL Connection
 mysqlConn = mysql.createConnection "mysql://#{dbConfig.mysql.user}:#{dbConfig.mysql.pass}@#{dbConfig.mysql.host}:#{dbConfig.mysql.port}/#{dbConfig.mysql.database}"
@@ -97,8 +101,8 @@ io = socketIO server
 
 # Bind Session
 io.use (socket, next)-> sessionBinder cookieParser, memoryStore, socket, next
-io.use passport.socket(errorParser)
-io.use st.scheduleRequestBind()
+io.use passport.socket errorParser
+io.use st.scheduleRequestBind stEngine
 
 # Socket Connection
 io.on 'connection', (socket)->

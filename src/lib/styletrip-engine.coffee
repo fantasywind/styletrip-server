@@ -33,7 +33,7 @@ class StyletripScheduleConnection
 
     @conn.bufferSize = 1024
     @conn.setEncoding 'utf-8'
-    @conn.connect 5987, 'c63.us.to'
+    @conn.connect port, host
 
     @requestPool = {}
 
