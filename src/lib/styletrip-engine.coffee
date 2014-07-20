@@ -16,6 +16,11 @@ class StyletripScheduleRequest
     throw err if err
     @socket.emit 'scheduleResult', result
 
+    # Saving member history
+    if @socket.session.member
+      @socket.session.member.addSchedule result.schedule_id, (err)->
+        @socket.emit 'failed', errorParser.generateError 403 if err
+
   prepareRequest: ->
     @id = uuid.v4()
 

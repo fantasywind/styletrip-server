@@ -8,6 +8,7 @@ MemberSchema = mongoose.Schema
   password: String
   facebookID: String
   facebookAccessToken: String
+  scheduleHistory: [String]
 
 # Hash Generator
 MemberSchema.methods.hashPassword = (password)->

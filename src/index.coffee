@@ -16,10 +16,6 @@ memoryStore = new session.MemoryStore
 sessionBinder = require "#{__dirname}/lib/session.binder"
 dbConfig = require "#{__dirname}/config/db.json"
 stConfig = require "#{__dirname}/config/styletrip.json"
-st = require "#{__dirname}/lib/styletrip"
-stEngine = new st.Connection
-  port: stConfig.engine.PORT
-  host: stConfig.engine.HOST
 
 # MySQL Connection
 mysqlConn = mysql.createConnection "mysql://#{dbConfig.mysql.user}:#{dbConfig.mysql.pass}@#{dbConfig.mysql.host}:#{dbConfig.mysql.port}/#{dbConfig.mysql.database}"
@@ -35,6 +31,11 @@ mongoose.connect mongoConnectArr.join(',')
 MemberModel = require "./models/member"
 # End MongoDB Models
 passport = require "#{__dirname}/lib/passport.coffee"
+st = require "#{__dirname}/lib/styletrip"
+stEngine = new st.Connection
+  port: stConfig.engine.PORT
+  host: stConfig.engine.HOST
+stMember = new st.Member passport
 
 app = express()
 
@@ -101,7 +102,7 @@ io = socketIO server
 
 # Bind Session
 io.use (socket, next)-> sessionBinder cookieParser, memoryStore, socket, next
-io.use passport.socket errorParser
+io.use stMember.socketBinder()
 io.use st.scheduleRequestBind stEngine
 
 # Socket Connection

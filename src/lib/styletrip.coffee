@@ -1,4 +1,5 @@
 Engine = require "#{__dirname}/styletrip-engine"
+Member = require "#{__dirname}/styletrip-member"
 utils = require "#{__dirname}/styletrip-utils"
 
 scheduleRequestBind = (engine)->
@@ -17,6 +18,7 @@ scheduleRequestBind = (engine)->
     next()
 
 module.exports = {
+  Member: Member
   Connection: Engine.Connection
   scheduleRequestBind: scheduleRequestBind
 }

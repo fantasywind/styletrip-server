@@ -33,27 +33,4 @@ passport.deserializeUser (id, done)->
   Member.findById id, (err, user)->
     done err, user
 
-passport.socket = (errorParser)->
-
-  return (socket, next)->
-    socket.on 'loginStatus', ->
-      user = socket.session.user
-      if user
-        socket.emit 'logined',
-          facebookID: user.facebookID
-          name: user.name
-      else if socket.session.passport and socket.session.passport.user
-        Member.findById socket.session.passport.user, (err, user)->
-          if err
-            socket.emit 'failed', errorParser.generateError 401, err
-          else if !user
-            socket.emit 'failed', errorParser.generateError 402
-          else
-            socket.session.user = user
-            socket.emit 'logined',
-              facebookID: user.facebookID
-              name: user.name
-
-    next()
-
 module.exports = passport
