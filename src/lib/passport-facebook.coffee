@@ -1,5 +1,5 @@
 FacebookStrategy = require('passport-facebook').Strategy
-passportConfig = require "#{__dirname}/passport.json"
+passportConfig = require "#{__dirname}/../config/passport"
 mongoose = require 'mongoose'
 Member = mongoose.model "Member"
 
