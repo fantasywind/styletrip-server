@@ -8,6 +8,18 @@ MemberSchema = mongoose.Schema
   password: String
   facebookID: String
   facebookAccessToken: String
+  facebookData:
+    location:
+      id: String
+      name: String
+    hometown:
+      id: String
+      name: String
+    birthday: String
+    favorite_athletes: []
+    favorite_teams: []
+    sports: []
+    likes: []
   scheduleHistory: [String]
 
 # Hash Generator

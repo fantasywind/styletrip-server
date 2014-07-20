@@ -14,6 +14,13 @@ router.post '/local', passport.authenticate 'local',
 router.get '/facebook', passport.authenticate 'facebook',
   scope: [
     'email'
+    'user_tagged_places'
+    'user_location'
+    'user_friends'
+    'user_hometown'
+    'user_interests'
+    'user_likes'
+    'user_birthday'
   ]
 
 router.get '/facebook/callback', passport.authenticate 'facebook', 
