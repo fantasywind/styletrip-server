@@ -34,6 +34,10 @@ class StyletripScheduleConnection
   constructor: (options)->
     {port, host} = options or {}
 
+    @createSocket port, host
+
+  createSocket: (port, host)->
+    @retryTimeout ?= 500
     @conn = new net.Socket
 
     @conn.bufferSize = 1024
@@ -44,6 +48,25 @@ class StyletripScheduleConnection
 
     # Listen callback
     @chunkPool = ''
+
+    @conn.on 'connect', ->
+      @retryTimeout = 500
+      console.log chalk.green "Schedule Engine Connection Created."
+
+    @conn.on 'error', (msg)=>
+      console.error chalk.red msg
+      @conn.destroy()
+
+      @retryTimeout = @retryTimeout * 2
+      if @retryTimeout < 300000
+        console.log chalk.gray "Retry connection in #{@retryTimeout / 1000} second(s)"
+        setTimeout =>
+          @createSocket port, host
+        , @retryTimeout
+      else
+        console.error chalk.red "Failed retry connect to engine..."
+        throw new Error 'Error on connect to engine.'
+
     @conn.on 'data', (chunk)=>
       @chunkPool += chunk
       @parseScheduleResult()
