@@ -49,7 +49,7 @@ class StyletripScheduleConnection
     # Listen callback
     @chunkPool = ''
 
-    @conn.on 'connect', ->
+    @conn.on 'connect', =>
       @retryTimeout = 500
       console.log chalk.green "Schedule Engine Connection Created."
 
