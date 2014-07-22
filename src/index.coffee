@@ -29,7 +29,9 @@ mongoose.connect mongoConnectArr.join(',')
 
 # Load MongoDB Models
 MemberModel = require "./models/member"
+ScheduleModel = require "./models/schedule"
 # End MongoDB Models
+
 passport = require "#{__dirname}/lib/passport.coffee"
 st = require "#{__dirname}/lib/styletrip"
 stEngine = new st.Connection
