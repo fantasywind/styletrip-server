@@ -17,9 +17,9 @@ class StyletripMember
   addSchedule: (scheduleID, done)->
     Member.findById @id, (err, member)->
       if err
-        socket.emit 'failed', errorParser.generateError 401, err
+        done errorParser.generateError 401, err
       else if !member
-        socket.emit 'failed', errorParser.generateError 402
+        done errorParser.generateError 402
       else
         member.scheduleHistory.push scheduleID
         member.save (err, member)->
@@ -38,8 +38,9 @@ class StyletripMemberController
           socket.emit 'logined',
             facebookID: user.facebookID
             name: user.name
-        else if socket.session.passport and socket.session.passport.user
-          Member.findById socket.session.passport.user, (err, member)->
+        else if (socket.session.passport and socket.session.passport.user) or socket.session.member
+          userId = socket.session.passport.user or socket.session.member
+          Member.findById userId, (err, member)->
             if err
               socket.emit 'failed', errorParser.generateError 401, err
             else if !member
@@ -48,13 +49,13 @@ class StyletripMemberController
               member = new StyletripMember member
               socket.session.member = member
               socket.emit 'logined', member.publicInfo()
-
         else
           # Generate Guest
           passport.generateGuest (err, guest)->
             if err
               socket.emit 'failed', errorParser.generateError 401, err
             else
+              console.log chalk.gray "Generated guest: #{guest._id}"
               member = new StyletripMember guest
               socket.session.member = member
               socket.session.token = guest.token.secret
@@ -77,4 +78,6 @@ class StyletripMemberController
         session.user = member
         console.log chalk.gray "Cookie Logined: #{session.user._id}"
 
-module.exports = StyletripMemberController
+module.exports = 
+  Controller: StyletripMemberController
+  Member: StyletripMember

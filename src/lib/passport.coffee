@@ -46,7 +46,7 @@ router.get '/success', (req, res)->
 router.get '/failed', (req, res)->
   res.redirect '/?err=facebookLogin'
 
-router.post '/updateToken', (req, res)->
+router.get '/updateToken', (req, res)->
   if req.session.token
     expires = new Date req.session.expires
     if req.session.token and expires.getTime() >= Date.now()

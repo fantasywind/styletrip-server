@@ -18,7 +18,7 @@ scheduleRequestBind = (engine)->
     next()
 
 module.exports = {
-  Member: Member
+  Member: Member.Controller
   Connection: Engine.Connection
   scheduleRequestBind: scheduleRequestBind
 }

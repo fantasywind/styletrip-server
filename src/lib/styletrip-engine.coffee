@@ -3,11 +3,27 @@ net = require 'net'
 chalk = require 'chalk'
 mongoose = require 'mongoose'
 errorParser = require 'error-message-parser'
+stMember = require "./styletrip-member"
 ScheduleModel = mongoose.model 'Schedule'
+
+class StyletripView
+  constructor: (options)->
+
+class StyletripDailySchedule
+  constructor: (options)->
+    {date, @view, @from, daily_cost} = options or {}
+
+    @date = new Date date
+    @cost = daily_cost
+
+  add: ->
+    @view = @view.concat arguments
 
 class StyletripScheduleRequest
   constructor: (options)->
     {@socket, @conditions, @engine} = options or {}
+
+    @schedules = []
 
   send: ->
     throw new Error "You have to initial request object." if !@engine or !@socket or !@conditions
@@ -15,25 +31,35 @@ class StyletripScheduleRequest
     @prepareRequest()
     @engine.schedule @
 
-  done: (err, result)->
-    if err
-      @socket.emit 'failed', errorParser.generateError err.code
-    else
-      @socket.emit 'scheduleResult', result
+  chunk: (chunk)->
+    @schedule_id ?= chunk.schedule_id
 
-      # Caching Schedule Result
-      schedule = new ScheduleModel
-        _id: result.schedule_id
-        chunks: result.results
-      schedule.save (err, schedule)=>
-        if err
-          @socket.emit 'failed', errorParser.generateError 403 if err
-          console.log chalk.red "Create schedule cache failed: #{err}"
-        else
-          # Saving member history
-          if @socket.session.member
-            @socket.session.member.addSchedule result.schedule_id, (err)->
-              @socket.emit 'failed', errorParser.generateError 403 if err
+    @schedules.push new StyletripDailySchedule result for result in chunk.results
+    @socket.emit 'scheduleResult',
+      schedule_id: chunk.schedule_id
+      part: chunk.chunk_part
+      next: chunk.has_next
+      err: chunk.err
+      chunk: chunk.results
+
+    @done() if !chunk.has_next
+
+  done: ->
+
+    # Caching Schedule Result
+    schedule = new ScheduleModel
+      _id: @schedule_id
+      chunks: @schedules
+    schedule.save (err, schedule)=>
+      if err
+        @socket.emit 'failed', errorParser.generateError 403 if err
+        console.log chalk.red "Create schedule cache failed: #{err}"
+      else
+        # Saving member history
+        if @socket.session.member
+          member = new stMember.Member @socket.session.member
+          member.addSchedule @schedule_id, (err)->
+            @socket.emit 'failed', errorParser.generateError 403 if err
 
   prepareRequest: ->
     @id = uuid.v4()
@@ -94,7 +120,9 @@ class StyletripScheduleConnection
       catch e
         throw new Error 'Invalid result! Please check engine server.'
 
-      if @requestPool[result.request_id]
+      request = @requestPool[result.request_id]
+
+      if request
         if result.err
           result.code ?= 405
           err = new Error "Engine Error: (#{result.code}) #{result.err}"
@@ -102,7 +130,7 @@ class StyletripScheduleConnection
           console.log chalk.red err.toString()
           return @requestPool[result.request_id].done err
 
-        @requestPool[result.request_id].done null, result
+        request.chunk result
           
       else
         console.log chalk.yellow "Not Found Request: #{result.request_id}"

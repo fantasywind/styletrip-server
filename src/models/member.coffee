@@ -21,7 +21,7 @@ MemberSchema = mongoose.Schema
     favorite_teams: []
     sports: []
     likes: []
-  scheduleHistory: [String]
+  scheduleHistory: []
   token:
     secret: String
     expires: Date
