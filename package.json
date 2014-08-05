@@ -2,7 +2,6 @@
   "name": "styletrip",
   "version": "0.0.0",
   "dependencies": {
-    "chalk": "^0.5.1"
   },
   "devDependencies": {
     "bcrypt-nodejs": "^0.0.3",
@@ -24,7 +23,9 @@
     "passport-local": "^1.0.0",
     "serve-favicon": "^2.0.1",
     "socket.io": "^1.0.6",
-    "xdate": "^0.8.0"
+    "xdate": "^0.8.0",
+    "chalk": "^0.5.1",
+    "rand-token": "^0.2.1"
   },
   "appPath": "src",
   "engines": {

@@ -1,6 +1,7 @@
 errorParser = require 'error-message-parser'
 passport = require "./passport"
 mongoose = require 'mongoose'
+chalk = require 'chalk'
 Member = mongoose.model 'Member'
 
 class StyletripMember
@@ -56,8 +57,24 @@ class StyletripMemberController
             else
               member = new StyletripMember guest
               socket.session.member = member
-              socket.emit 'guestLogined'
+              socket.session.token = guest.token.secret
+              socket.session.expires = guest.token.expires
+              socket.sessionStore.set socket.sessionID, socket.session, -> socket.emit 'guestLogined'
 
       next()
+
+  cookieLogin: (token, session)->
+    return false if !token or token is ''
+
+    Member.findOne
+      "token.secret": token
+      "token.expires":
+        $gte: Date.now()
+    , (err, member)->
+      return console.error chalk.red "Cookie login error" if err
+
+      if member
+        session.user = member
+        console.log chalk.gray "Cookie Logined: #{session.user._id}"
 
 module.exports = StyletripMemberController

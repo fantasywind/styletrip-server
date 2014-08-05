@@ -22,6 +22,9 @@ MemberSchema = mongoose.Schema
     sports: []
     likes: []
   scheduleHistory: [String]
+  token:
+    secret: String
+    expires: Date
 
 # Hash Generator
 MemberSchema.methods.hashPassword = (password)->

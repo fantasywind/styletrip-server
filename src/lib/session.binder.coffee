@@ -22,9 +22,13 @@ module.exports = (cookieParser, memoryStore, socket, next)->
       memoryStore.get sid, (storeErr, session)->
         console.error 'could not look up session by key' if storeErr
         if session
+          socket.sessionID = sid
+          socket.sessionStore = memoryStore
           socket.session = session
           next()
         else
+          socket.sessionID = sid
+          socket.sessionStore = memoryStore
           socket.session = 
             cookie: 
               originalMaxAge: null

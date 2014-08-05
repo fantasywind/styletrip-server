@@ -51,6 +51,7 @@ app = express()
 app.set 'port', process.env.PORT || 3030
 app.use compression()
 app.use logger('dev')
+app.use cookieParser()
 app.use session
   secret: 'SESSION_SECRET_KEY'
   resave: true
@@ -59,7 +60,6 @@ app.use session
 app.use bodyParser.json()
 app.use bodyParser.urlencoded
   extended: true
-app.use cookieParser()
 app.use passport.initialize()
 app.use passport.session()
 app.use csrf()
@@ -73,6 +73,10 @@ app.use errorParser.Parser
 app.use '/auth', passport.router
 
 app.get '/csrf', (req, res)->
+  # Cookie Login
+  if req.cookies.token
+    stMember.cookieLogin req.cookies.token, req.session
+
   try
     token = req.csrfToken()
     res.json
@@ -113,6 +117,7 @@ io = socketIO server
 io.use (socket, next)-> sessionBinder cookieParser, memoryStore, socket, next
 io.use stMember.socketBinder()
 io.use st.scheduleRequestBind stEngine
+io.use (socket, next)-> socket.sessionStore.set socket.sessionID, socket.session, -> next()
 
 # Socket Connection
 io.on 'connection', (socket)->
