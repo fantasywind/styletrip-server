@@ -24,7 +24,7 @@
     "serve-favicon": "^2.0.1",
     "socket.io": "^1.0.6",
     "xdate": "^0.8.0",
-    "chalk": "^0.5.1",
+    "cookie": "^0.1.2",
     "rand-token": "^0.2.1"
   },
   "appPath": "src",

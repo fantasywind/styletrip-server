@@ -73,10 +73,6 @@ app.use errorParser.Parser
 app.use '/auth', passport.router
 
 app.get '/csrf', (req, res)->
-  # Cookie Login
-  if req.cookies.token
-    stMember.cookieLogin req.cookies.token, req.session
-
   try
     token = req.csrfToken()
     res.json
