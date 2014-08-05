@@ -95,13 +95,15 @@ class StyletripScheduleConnection
         throw new Error 'Invalid result! Please check engine server.'
 
       if @requestPool[result.request_id]
-        if result.status
-          @requestPool[result.request_id].done null, result
-        else
-          err = new Error "Engine Error: (#{result.code}) #{result.msg}"
-          err.code = result.code or 405
+        if result.err
+          result.code ?= 405
+          err = new Error "Engine Error: (#{result.code}) #{result.err}"
+          err.code = result.code
           console.log chalk.red err.toString()
-          @requestPool[result.request_id].done err
+          return @requestPool[result.request_id].done err
+
+        @requestPool[result.request_id].done null, result
+          
       else
         console.log chalk.yellow "Not Found Request: #{result.request_id}"
       
