@@ -1,4 +1,5 @@
 errorParser = require 'error-message-parser'
+passport = require "./passport"
 mongoose = require 'mongoose'
 Member = mongoose.model 'Member'
 
@@ -46,6 +47,16 @@ class StyletripMemberController
               member = new StyletripMember member
               socket.session.member = member
               socket.emit 'logined', member.publicInfo()
+
+        else
+          # Generate Guest
+          passport.generateGuest (err, guest)->
+            if err
+              socket.emit 'failed', errorParser.generateError 401, err
+            else
+              member = new StyletripMember guest
+              socket.session.member = member
+              socket.emit 'guestLogined'
 
       next()
 

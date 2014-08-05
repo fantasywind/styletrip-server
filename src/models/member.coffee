@@ -3,6 +3,7 @@ bcrypt = require 'bcrypt-nodejs'
 
 MemberSchema = mongoose.Schema
   email: String
+  guest: Boolean
   name: String
   username: String
   password: String

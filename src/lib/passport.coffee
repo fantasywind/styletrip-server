@@ -1,6 +1,7 @@
 express = require 'express'
 passport = require 'passport'
 mongoose = require 'mongoose'
+chalk = require 'chalk'
 Member = mongoose.model 'Member'
 require("#{__dirname}/passport-local") passport
 require("#{__dirname}/passport-facebook") passport
@@ -39,5 +40,15 @@ passport.serializeUser (user, done)->
 passport.deserializeUser (id, done)->
   Member.findById id, (err, user)->
     done err, user
+
+# Generate Guest
+passport.generateGuest = (cb)->
+  guest = new Member
+    guest: true
+
+  guest.save (err, guest)->
+    chalk.red "Create guest member failed: #{err}" if err
+
+    cb err, guest
 
 module.exports = passport

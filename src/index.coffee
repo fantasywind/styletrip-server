@@ -1,6 +1,7 @@
 express = require 'express'
 path = require 'path'
 logger = require 'morgan'
+chalk = require 'chalk'
 cookieParser = require 'cookie-parser'
 session = require 'express-session'
 errorhandler = require 'errorhandler'
@@ -26,6 +27,12 @@ mongoConnectArr = []
 for mongo in dbConfig.mongo
   mongoConnectArr.push "mongodb://#{mongo.user}:#{mongo.pass}@#{mongo.host}:#{mongo.port}/#{mongo.database}"
 mongoose.connect mongoConnectArr.join(',')
+
+mongoose.connection.on 'connected', (e)->
+  console.log chalk.gray "MongoDB connected."
+
+mongoose.connection.on 'error', (e)->
+  console.error chalk.red "MongoDB connect error: #{e}"
 
 # Load MongoDB Models
 MemberModel = require "./models/member"
