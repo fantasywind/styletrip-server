@@ -1,8 +1,12 @@
 {
   "name": "styletrip",
   "version": "0.0.0",
-  "dependencies": {},
   "devDependencies": {
+    "istanbul": "^0.3.0",
+    "mocha": "^1.21.3",
+    "should": "^4.0.4"
+  },
+  "dependencies": {
     "bcrypt-nodejs": "^0.0.3",
     "body-parser": "^1.0.2",
     "chalk": "^0.5.1",
@@ -30,5 +34,8 @@
   "appPath": "src",
   "engines": {
     "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha --require test/support/env --reporter spec --bail --check-leaks test/"
   }
 }
