@@ -1,9 +1,9 @@
 errorParser = require 'error-message-parser'
-passport = require "./passport"
 mongoose = require 'mongoose'
 chalk = require 'chalk'
 cookie = require 'cookie'
 Member = mongoose.model 'Member'
+passport = require "./passport"
 
 generateGuest = (socket)->
   passport.generateGuest (err, guest)->
@@ -11,68 +11,13 @@ generateGuest = (socket)->
       socket.emit 'failed', errorParser.generateError 401, err
     else
       console.log chalk.gray "Generated guest: #{guest._id}"
-      member = new StyletripMember guest
+      member = guest
       socket.session.member = member
       socket.session.token = guest.token.secret
       socket.session.expires = guest.token.expires
-      socket.sessionStore.set socket.sessionID, socket.session, -> socket.emit 'guestLogined'
-
-class StyletripMember
-  constructor: (options)->
-    {@facebookAccessToken, @facebookID, @name, @id, _id, done} = options
-    @id ?= _id
-    @syncDocument = false
-
-    if @id
-      @queues = []
-
-      Member.findById @id, (err, member)=>
-        if err
-          done errorParser.generateError 401, err
-        else if !member
-          @createDocument (err, member)=>
-            if err
-              done err
-            else
-              @syncDocument = true
-              @$document = member
-        else
-          @document = member
-          @syncDocument = true
-
-          for queue in @queues
-            queue.call @
-
-  queue: ->
-    if @syncDocument
-      for fn in arguments
-        fn.call @
-    else
-      for fn in arguments
-        @queues.push fn
-
-  publicInfo: -> {
-    facebookID: @facebookID
-    name: @name
-  }
-
-  addSchedule: (scheduleID, done)->
-    @queue ->
-      @document.scheduleHistory.push scheduleID
-      @document.save (err, member)->
-        return done err if err
-
-        done null
-
-  createDocument: (done)->
-    member = new Member
-      facebookID: profile.id
-      facebookAccessToken: accessToken
-      name: profile.displayName
-    member.save (err, member)->
-      return done err if err
-
-      done null, member
+      socket.sessionStore.set socket.sessionID, socket.session, ->
+        socket.emit 'guestLogined',
+          sid: socket.sessionID
 
 class StyletripMemberController
   constructor: (@passport)->
@@ -88,14 +33,13 @@ class StyletripMemberController
             facebookID: user.facebookID
             name: user.name
         else if (socket.session.passport and socket.session.passport.user) or socket.session.member
-          userId = socket.session.member or socket.session.passport.user
+          userId = socket.session.member._id or socket.session.passport.user
           Member.findById userId, (err, member)->
             if err
               socket.emit 'failed', errorParser.generateError 401, err
             else if !member
               socket.emit 'failed', errorParser.generateError 402
             else
-              member = new StyletripMember member
               socket.session.member = member
               socket.emit 'logined', member.publicInfo()
         else if cookies.token
@@ -122,7 +66,7 @@ class StyletripMemberController
       return console.error chalk.red "Cookie login error" if err
 
       if member
-        session.member = new StyletripMember member
+        session.member = member
         console.log chalk.gray "Cookie Logined: #{session.member.id}"
         cb null if cb
       else
@@ -130,4 +74,3 @@ class StyletripMemberController
 
 module.exports = 
   Controller: StyletripMemberController
-  Member: StyletripMember

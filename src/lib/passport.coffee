@@ -4,8 +4,8 @@ mongoose = require 'mongoose'
 randtoken = require 'rand-token'
 chalk = require 'chalk'
 Member = mongoose.model 'Member'
-require("#{__dirname}/passport-local") passport
-require("#{__dirname}/passport-facebook") passport
+require("./passport-local") passport
+require("./passport-facebook") passport
 
 passport.router = router = express.Router()
 
@@ -46,20 +46,29 @@ router.get '/success', (req, res)->
 router.get '/failed', (req, res)->
   res.redirect '/?err=facebookLogin'
 
-router.get '/updateToken', (req, res)->
-  if req.session.token
-    expires = new Date req.session.expires
-    if req.session.token and expires.getTime() >= Date.now()
-      res.cookie 'token', req.session.token,
-        path: '/'
-        expires: expires
-        httpOnly: true
-      res.json
-        status: true
+router.post '/updateToken', (req, res)->
+  return res.sendError 408 if !req.body.sid
+
+  req.sessionStore.get req.body.sid, (storeErr, session)->
+    return res.sendError 408 if storeErr
+
+    if session.token
+      expires = new Date session.expires
+      if session.token and expires.getTime() >= Date.now()
+        req.session.member = session.member
+        req.sessionStore.destroy req.body.sid, (err)->
+          console.log chalk.gray "Destroy session failed." if err
+
+        res.cookie 'token', session.token,
+          path: '/'
+          expires: expires
+          httpOnly: true
+        res.json
+          status: true
+      else
+        res.sendError 407
     else
-      res.sendError 407
-  else
-    res.sendError 406
+      res.sendError 406
 
 passport.serializeUser (user, done)->
   done null, user.id or user._id

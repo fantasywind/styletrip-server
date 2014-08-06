@@ -4,6 +4,8 @@
 # Copyright (c) 2014 Chia Yu Pai <fantasyatelier@gmail.com>
 # license: MIT
 
+uid = require('uid-safe').sync
+
 findCookie = (handshakeInput)->
   key = 'connect.sid'
   handshake = JSON.parse JSON.stringify handshakeInput
@@ -25,8 +27,10 @@ module.exports = (cookieParser, memoryStore, socket, next)->
           socket.sessionID = sid
           socket.sessionStore = memoryStore
           socket.session = session
-          next()
+          memoryStore.set sid, socket.session, ->
+            next()
         else
+          sid = uid 24
           socket.sessionID = sid
           socket.sessionStore = memoryStore
           socket.session = 
@@ -35,5 +39,6 @@ module.exports = (cookieParser, memoryStore, socket, next)->
               expires: null
               httpOnly: true
               path: '/'
+
           memoryStore.set sid, socket.session, ->
             next()

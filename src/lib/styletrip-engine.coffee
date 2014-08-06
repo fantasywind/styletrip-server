@@ -3,8 +3,8 @@ net = require 'net'
 chalk = require 'chalk'
 mongoose = require 'mongoose'
 errorParser = require 'error-message-parser'
-stMember = require "./styletrip-member"
-ScheduleModel = mongoose.model 'Schedule'
+Schedule = mongoose.model 'Schedule'
+Member = mongoose.model 'Member'
 
 class StyletripView
   constructor: (options)->
@@ -47,7 +47,7 @@ class StyletripScheduleRequest
   done: ->
 
     # Caching Schedule Result
-    schedule = new ScheduleModel
+    schedule = new Schedule
       _id: @schedule_id
       chunks: @schedules
     schedule.save (err, schedule)=>
@@ -57,9 +57,14 @@ class StyletripScheduleRequest
       else
         # Saving member history
         if @socket.session.member
-          member = new stMember.Member @socket.session.member
-          member.addSchedule @schedule_id, (err)->
-            @socket.emit 'failed', errorParser.generateError 403 if err
+          Member.findById @socket.session.member._id, (err, member)=>
+            return console.error chalk.red 'Cannot find member to add schedule history.' if err
+
+            if member
+              member.addSchedule @schedule_id, (err)=>
+                @socket.emit 'failed', errorParser.generateError 403 if err
+            else
+              console.log chalk.gray "Cannot find member to add schedule history."
 
   prepareRequest: ->
     @id = uuid.v4()

@@ -47,13 +47,14 @@ stEngine = new st.Connection
 stMember = new st.Member passport
 
 app = express()
+sessionSecret = 'SESSION_SECRET_KEY'
 
 app.set 'port', process.env.PORT || 3030
 app.use compression()
 app.use logger('dev')
 app.use cookieParser()
 app.use session
-  secret: 'SESSION_SECRET_KEY'
+  secret: sessionSecret
   resave: true
   saveUninitialized: true
   store: memoryStore

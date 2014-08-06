@@ -2,29 +2,27 @@ FacebookStrategy = require('passport-facebook').Strategy
 passportConfig = require "#{__dirname}/../config/passport"
 mongoose = require 'mongoose'
 Member = mongoose.model "Member"
-stMember = require "./styletrip-member"
 
 module.exports = (passport)->
   passport.use new FacebookStrategy
     clientID: passportConfig.facebookAppID
     clientSecret: passportConfig.facebookAppSecret
     callbackURL: passportConfig.facebookRedirectUrl
-  , (accessToken, refreshToken, profile, done)->
+    passReqToCallback: true
+  , (req, accessToken, refreshToken, profile, next)->
     
+    # hijack done
+    done = (err, member)->
+      if err
+        next err
+      else
+        req.session.member = member
+        next null, member
+
     Member.findOne
       facebookID: profile.id
     , (err, member)->
       return done err if err
-
-      createMember = ->
-        member = new Member
-          facebookID: profile.id
-          facebookAccessToken: accessToken
-          name: profile.displayName
-        member.save (err, member)->
-          return done err if err
-
-          done null, member
 
       # Not Found
       if !member
@@ -36,13 +34,12 @@ module.exports = (passport)->
             return done err if err
 
             if !member
-              #createMember()
-              member = new stMember.Member
+              member = new Member
                 facebookID: profile.id
                 facebookAccessToken: accessToken
                 name: profile.displayName
 
-              # Combined tmp user
+              done null, member
 
             else
               member.facebookID = profile.id
@@ -52,7 +49,23 @@ module.exports = (passport)->
                 return done err if err
 
                 done null, member
+
+            # Combined tmp user
+            member.combineGuest req.session.member if req.session.member
+            
         else
-          createMember()
+          member = new Member
+            facebookID: profile.id
+            facebookAccessToken: accessToken
+            name: profile.displayName
+
+          # Combined tmp user
+          member.combineGuest req.session.member if req.session.member
+
+          done null, member
+        
       else
+        # Combined tmp user
+        member.combineGuest req.session.member if req.session.member
+
         done null, member
