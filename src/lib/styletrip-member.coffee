@@ -19,8 +19,37 @@ generateGuest = (socket)->
 
 class StyletripMember
   constructor: (options)->
-    {@facebookID, @name, @id, _id} = options
+    {@facebookAccessToken, @facebookID, @name, @id, _id, done} = options
     @id ?= _id
+    @syncDocument = false
+
+    if @id
+      @queues = []
+
+      Member.findById @id, (err, member)=>
+        if err
+          done errorParser.generateError 401, err
+        else if !member
+          @createDocument (err, member)=>
+            if err
+              done err
+            else
+              @syncDocument = true
+              @$document = member
+        else
+          @document = member
+          @syncDocument = true
+
+          for queue in @queues
+            queue.call @
+
+  queue: ->
+    if @syncDocument
+      for fn in arguments
+        fn.call @
+    else
+      for fn in arguments
+        @queues.push fn
 
   publicInfo: -> {
     facebookID: @facebookID
@@ -28,17 +57,22 @@ class StyletripMember
   }
 
   addSchedule: (scheduleID, done)->
-    Member.findById @id, (err, member)->
-      if err
-        done errorParser.generateError 401, err
-      else if !member
-        done errorParser.generateError 402
-      else
-        member.scheduleHistory.push scheduleID
-        member.save (err, member)->
-          return done err if err
+    @queue ->
+      @document.scheduleHistory.push scheduleID
+      @document.save (err, member)->
+        return done err if err
 
-          done null
+        done null
+
+  createDocument: (done)->
+    member = new Member
+      facebookID: profile.id
+      facebookAccessToken: accessToken
+      name: profile.displayName
+    member.save (err, member)->
+      return done err if err
+
+      done null, member
 
 class StyletripMemberController
   constructor: (@passport)->

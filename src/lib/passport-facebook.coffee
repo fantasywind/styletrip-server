@@ -2,6 +2,7 @@ FacebookStrategy = require('passport-facebook').Strategy
 passportConfig = require "#{__dirname}/../config/passport"
 mongoose = require 'mongoose'
 Member = mongoose.model "Member"
+stMember = require "./styletrip-member"
 
 module.exports = (passport)->
   passport.use new FacebookStrategy
@@ -35,7 +36,14 @@ module.exports = (passport)->
             return done err if err
 
             if !member
-              createMember()
+              #createMember()
+              member = new stMember.Member
+                facebookID: profile.id
+                facebookAccessToken: accessToken
+                name: profile.displayName
+
+              # Combined tmp user
+
             else
               member.facebookID = profile.id
               member.facebookAccessToken = accessToken
