@@ -3,7 +3,9 @@ mongoose = require 'mongoose'
 Member = mongoose.model "Member"
 
 module.exports = (passport)->
-  passport.use new LocalStrategy (username, password, done)->
+  passport.use new LocalStrategy
+    passReqToCallback: true
+  , (req, username, password, done)->
     
     Member.findOne
       email: username
@@ -19,6 +21,9 @@ module.exports = (passport)->
       if !member.validPasspord password
         return done null, false,
           message: 'Incorrect pasword.'
+
+      # Combined tmp user
+      member.combineGuest req.session.member if req.session.member
 
       done null, member
     
