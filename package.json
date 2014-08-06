@@ -36,6 +36,7 @@
     "node": ">=0.10.0"
   },
   "scripts": {
-    "test": "mocha --require test/support/env --reporter spec --bail --check-leaks test/"
+    "start": "coffee src/index.coffee",
+    "test": "mocha --compilers coffee:coffee-script/register --require test/support/env --reporter spec --bail --check-leaks test/"
   }
 }
