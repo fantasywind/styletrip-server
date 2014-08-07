@@ -26,7 +26,6 @@ recentHoliday = ->
     nextSat.addDays(1).clearTime().setHours(8).getTime()
   ]
 
-
 module.exports = {
   recentHoliday: recentHoliday
 }
