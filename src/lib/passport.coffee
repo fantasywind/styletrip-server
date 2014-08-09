@@ -52,7 +52,7 @@ router.post '/updateToken', (req, res)->
   req.sessionStore.get req.body.sid, (storeErr, session)->
     return res.sendError 408 if storeErr
 
-    if session.token
+    if session
       expires = new Date session.expires
       if session.token and expires.getTime() >= Date.now()
         req.session.member = session.member

@@ -1,21 +1,17 @@
 TEST_MONGO = process.env.TEST_MONGO
+request = require 'supertest'
+express = require 'express'
+cookieParser = require 'cookie-parser'
+session = require 'express-session'
+errorParser = require 'error-message-parser'
+bodyParser = require 'body-parser'
 should = require 'should'
+sessionSecret = 'TESTER_SESSION_SECRET_KEY'
+memoryStore = new session.MemoryStore
 Member = require "../src/models/member.coffee"
 mongoose = require 'mongoose'
 Member = mongoose.model 'Member'
 clearDB = require('mocha-mongoose') TEST_MONGO
-
-# Overwrite methods
-###
-Member.findById = (id, callback)->
-  user = new Member
-    _id: id
-  callback null, user
-
-Member.schema.methods.save1 = (cb)->
-  throw 'WTF'
-  cb null, this
-###
 
 passport = require "#{__dirname}/../src/lib/passport"
 
@@ -76,3 +72,100 @@ describe 'passport', ->
         member.token.secret.should.be.type 'string'
         new Date(member.token.expires).toString().should.not.equal 'Invalid Date'
         done()
+
+describe 'passport-router', ->
+  req = null
+
+  beforeEach ->
+    app = express()
+    app.use cookieParser()
+    app.use session
+      secret: sessionSecret
+      resave: true
+      saveUninitialized: true
+      store: memoryStore
+    app.use bodyParser.json()
+    app.use bodyParser.urlencoded
+      extended: true
+    app.use errorParser.Parser
+      cwd: "#{__dirname}/../src/errorMessages"
+      lang: 'zh-TW'
+    app.use passport.router
+    req = request app
+
+  describe '/updateToken', ->
+
+    it 'should response error when empty body', (done)->
+      req
+        .post '/updateToken'
+        .expect 200
+        .end (err, res)->
+          throw err if err
+
+          errObj = errorParser.generateError 408
+
+          res.body.should.have.property 'status', false
+          res.body.should.have.property 'code', 408
+          res.body.should.have.property 'level', errObj.level
+          res.body.should.have.property 'message', errObj.message
+
+          done()
+
+    it 'should response error when session not found', (done)->
+      req
+        .post '/updateToken'
+        .send
+          sid: 'sessionidforunittest'
+        .expect 200
+        .end (err, res)->
+          throw err if err
+
+          errObj = errorParser.generateError 406
+
+          res.body.should.have.property 'status', false
+          res.body.should.have.property 'code', 406
+          res.body.should.have.property 'level', errObj.level
+          res.body.should.have.property 'message', errObj.message
+
+          done()
+
+    it 'should response error when session token missing', (done)->
+      sessionId = 'sessionidforunittest'
+      memoryStore.set sessionId,
+        token: null
+        cookie: 
+            originalMaxAge: null
+            expires: null
+            httpOnly: true
+            path: '/'
+      , (err)->
+        throw err if err
+
+        req
+          .post '/updateToken'
+          .send
+            sid: sessionId
+          .expect 200
+          .end (err, res)->
+            throw err if err
+
+            errObj = errorParser.generateError 407
+
+            res.body.should.have.property 'status', false
+            res.body.should.have.property 'code', 407
+            res.body.should.have.property 'level', errObj.level
+            res.body.should.have.property 'message', errObj.message
+
+            done()
+
+  describe '/failed', ->
+
+    it 'should route /failed redirect to /?err=facebookLogin', (done)->
+      req
+        .get '/failed'
+        .expect 'Location', '/?err=facebookLogin'
+        .expect 302
+        .end (err, res)->
+          throw err if err
+
+          done()
