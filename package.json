@@ -4,8 +4,9 @@
   "devDependencies": {
     "istanbul": "^0.3.0",
     "mocha": "^1.21.3",
-    "should": "^4.0.4",
-    "rewire": "^2.1.0"
+    "mocha-mongoose": "^1.0.1",
+    "rewire": "^2.1.0",
+    "should": "^4.0.4"
   },
   "dependencies": {
     "bcrypt-nodejs": "^0.0.3",
