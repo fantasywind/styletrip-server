@@ -1,16 +1,13 @@
 should = require 'should'
+Member = require "../src/models/member.coffee"
 mongoose = require 'mongoose'
-Schema = mongoose.Schema
+Member = mongoose.model 'Member'
 
-MemberSchema = new Schema
-  _id: Number
-
-MemberSchema.statics.findById = (id, callback)->
+# Overwrite methods
+Member.findById = (id, callback)->
   user = new Member
     _id: id
   callback null, user
-
-Member = mongoose.model('Member', MemberSchema);
 
 passport = require "#{__dirname}/../src/lib/passport"
 
@@ -35,7 +32,7 @@ describe 'passport', ->
 
   describe 'passport.deserializeUser', ->
     it 'should deserializeUser find correct user id', (done)->
-      userId = 123
+      userId = new mongoose.Types.ObjectId
       passport.deserializeUser userId, (err, user)->
         should.not.exist err
         user._id.should.be.equal userId
