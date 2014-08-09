@@ -104,10 +104,11 @@ describe 'passport-router', ->
 
           errObj = errorParser.generateError 408
 
-          res.body.should.have.property 'status', false
-          res.body.should.have.property 'code', 408
-          res.body.should.have.property 'level', errObj.level
-          res.body.should.have.property 'message', errObj.message
+          res.body.should.have.properties
+            status: false
+            code: 408
+            level: errObj.level
+            message: errObj.message
 
           done()
 
@@ -122,10 +123,11 @@ describe 'passport-router', ->
 
           errObj = errorParser.generateError 406
 
-          res.body.should.have.property 'status', false
-          res.body.should.have.property 'code', 406
-          res.body.should.have.property 'level', errObj.level
-          res.body.should.have.property 'message', errObj.message
+          res.body.should.have.properties
+            status: false
+            code: 406
+            level: errObj.level
+            message: errObj.message
 
           done()
 
@@ -151,10 +153,106 @@ describe 'passport-router', ->
 
             errObj = errorParser.generateError 407
 
-            res.body.should.have.property 'status', false
-            res.body.should.have.property 'code', 407
-            res.body.should.have.property 'level', errObj.level
-            res.body.should.have.property 'message', errObj.message
+            res.body.should.have.properties 
+              status: false
+              code: 407
+              level: errObj.level
+              message: errObj.message
+
+            done()
+
+    it 'should response error when session token expired', (done)->
+      sessionId = 'sessionidforunittest'
+      memoryStore.set sessionId,
+        token: 'logintokenforunittest'
+        expires: Date.now() - 10
+        cookie: 
+            originalMaxAge: null
+            expires: null
+            httpOnly: true
+            path: '/'
+      , (err)->
+        throw err if err
+
+        req
+          .post '/updateToken'
+          .send
+            sid: sessionId
+          .expect 200
+          .end (err, res)->
+            throw err if err
+
+            errObj = errorParser.generateError 407
+
+            res.body.should.have.properties
+              status: false
+              code: 407
+              level: errObj.level
+              message: errObj.message
+
+            done()
+
+    it 'should temporarily token session will be clean', (done)->
+      sessionId = 'sessionidforunittest'
+      memoryStore.set sessionId,
+        token: 'logintokenforunittest'
+        expires: Date.now() + 2000
+        cookie: 
+            originalMaxAge: null
+            expires: null
+            httpOnly: true
+            path: '/'
+      , (err)->
+        throw err if err
+
+        req
+          .post '/updateToken'
+          .send
+            sid: sessionId
+          .expect 200
+          .end (err, res)->
+            throw err if err
+
+            res.body.should.have.property 'status', true
+
+            memoryStore.get sessionId, (err, session)->
+
+              should.not.exist err
+              should.not.exist session
+
+              done()
+
+    it "should token will be set on user's cookie", (done)->
+      sessionId = 'sessionidforunittest'
+      memoryStore.set sessionId,
+        token: 'logintokenforunittest'
+        expires: Date.now() + 2000
+        cookie: 
+            originalMaxAge: null
+            expires: null
+            httpOnly: true
+            path: '/'
+      , (err)->
+        throw err if err
+
+        req
+          .post '/updateToken'
+          .send
+            sid: sessionId
+          .expect 200
+          .end (err, res)->
+            throw err if err
+
+            res.body.should.have.property 'status', true
+            should.exist res.header['set-cookie']
+
+            setCookie = false
+            for cookie in res.header['set-cookie']
+              if cookie.match /^token/g
+                cookie.should.match /^token=logintokenforunittest; Path=\/; Expires=.*; HttpOnly$/g
+                setCookie = true
+
+            setCookie.should.be.true
 
             done()
 
