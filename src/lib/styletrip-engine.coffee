@@ -2,11 +2,18 @@ _ = require 'lodash'
 uuid = require 'node-uuid'
 net = require 'net'
 chalk = require 'chalk'
+XDate = require 'xdate'
 mongoose = require 'mongoose'
 EventEmitter = require('events').EventEmitter
 errorParser = require 'error-message-parser'
 Schedule = mongoose.model 'Schedule'
 Member = mongoose.model 'Member'
+
+viewType =
+  VIEW: 'VIEW'
+  DINNING: 'DINNING'
+  ACCOMMODATION: 'ACCOMMODATION'
+  ROUTE: 'ROUTE'
 
 class StyletripSchedule extends EventEmitter
   constructor: (options)->
@@ -35,26 +42,40 @@ class StyletripSchedule extends EventEmitter
     
     return @data.chunks
 
-class StyletripView
+class StyletripFootprint
+  constructor: ->
+
+class StyletripView extends StyletripFootprint
   constructor: (options)->
+    {@gps, @name, @profile, @region, @serial, @spend_time, @start_time, @type, @view_id} = options or {}
+
+class StyletripRoute extends StyletripFootprint
+  constructor: (options)->
+    {@transport, @serial, @spend_time, @start_time, @type} = options or {}
 
 class StyletripDailySchedule
   constructor: (options)->
-    {date, @view, @from, daily_cost} = options or {}
-
-    @date = new Date date
+    {date, @main_view, @from, daily_cost, schedule} = options or {}
+    
+    date = parseInt date, 10
+    @date = new XDate(date).toString "yyyy-MM-dd"
     @cost = daily_cost
+    @footprints = []
+
+    @add.apply @, schedule
 
   add: ->
-    @view = @view.concat arguments
+    for print in arguments
+      footprint = if print.type is viewType.ROUTE then new StyletripRoute print else new StyletripView print
+      @footprints.push footprint
 
-class StyletripScheduleRequest
+class StyletripScheduleRequest extends EventEmitter
   constructor: (options)->
     {@conditions, @engine} = options or {}
 
     @schedules = []
 
-  send: (@callback)->
+  send: ->
     throw new Error "You have to initial request object." if !@engine or !@conditions
 
     @prepareRequest()
@@ -64,8 +85,16 @@ class StyletripScheduleRequest
     console.log chalk.gray "[Engine] ReqID: #{chunk.schedule_id}, Part: #{chunk.chunk_part}, hasNext: #{chunk.has_next}"
     @schedule_id ?= chunk.schedule_id
 
-    @schedules.push new StyletripDailySchedule result for result in chunk.results
-    @callback null, chunk
+    chunkSchedules = []
+    for result in chunk.results
+      dailySchedule = new StyletripDailySchedule result 
+      @schedules.push dailySchedule
+      chunkSchedules.push dailySchedule
+
+    _.extend chunk,
+      dailySchedules: chunkSchedules
+    
+    @emit 'receivedChunked', chunk
 
     @done() if !chunk.has_next
 
@@ -73,13 +102,16 @@ class StyletripScheduleRequest
     # Caching Schedule Result
     schedule = new Schedule
       _id: @schedule_id
+      keyword: @conditions.keyword
+      dates: @conditions.dates
+      from: @payload.place
       chunks: @schedules
     schedule.save (err, schedule)=>
       if err
-        @callback errorParser.generateError 403
+        @emit 'error', errorParser.generateError 403
         console.log chalk.red "Create schedule cache failed: #{err}"
       else
-        @callback null, schedule, true
+        @emit 'end'
 
   saveHistory: (member, done)->
     console.log chalk.gray "[Engine] Save to member history (Member: #{member._id})"

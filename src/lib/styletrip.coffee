@@ -20,21 +20,24 @@ scheduleRequestBind = (engine)->
         conditions:
           keyword: keyword
           dates: dates or utils.recentHoliday()
-      request.send (err, result, finish = false)->
-        socket.emit 'failed', err if err
+      request.send()
 
-        if !finish
-          socket.emit 'scheduleResult',
-            schedule_id: result.schedule_id
-            part: result.chunk_part
-            next: result.has_next
-            err: result.err
-            chunk: result.results
-        else
-          # Saving member history
-          if socket.session.member
-            request.saveHistory socket.session.member, (err)->
-              socket.emit 'failed', err if err
+      request.on 'error',(err)->
+        socket.emit 'failed', err
+
+      request.on 'receivedChunked', (chunk)->
+        socket.emit 'scheduleResult',
+          schedule_id: chunk.schedule_id
+          part: chunk.chunk_part
+          next: chunk.has_next
+          err: chunk.err
+          chunk: chunk.dailySchedules
+
+      request.on 'end', ->
+        # Saving member history
+        if socket.session.member
+          request.saveHistory socket.session.member, (err)->
+            socket.emit 'failed', err if err
 
     # Schedule query
     #
