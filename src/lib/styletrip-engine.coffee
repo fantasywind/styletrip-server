@@ -96,7 +96,7 @@ class StyletripScheduleConnection
 
     @conn.on 'connect', =>
       @retryTimeout = 500
-      console.log chalk.green "Schedule Engine Connection Created."
+      console.log chalk.green "[Schedule Engine] Connection Created."
 
     @conn.on 'error', (msg)=>
       console.error chalk.red msg
@@ -104,13 +104,13 @@ class StyletripScheduleConnection
 
       @retryTimeout = @retryTimeout * 2
       if @retryTimeout < 300000
-        console.log chalk.gray "Retry connection in #{@retryTimeout / 1000} second(s)"
+        console.log chalk.gray "[Schedule Engine] Retry connection in #{@retryTimeout / 1000} second(s)"
         setTimeout =>
           @createSocket port, host
         , @retryTimeout
       else
-        console.error chalk.red "Failed retry connect to engine..."
-        throw new Error 'Error on connect to engine.'
+        console.error chalk.red "[Schedule Engine] Failed retry connection :("
+        throw new Error '[Schedule Engine] Error on connect.'
 
     @conn.on 'data', (chunk)=>
       @chunkPool += chunk
