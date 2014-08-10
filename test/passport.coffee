@@ -74,6 +74,25 @@ describe 'passport', ->
         new Date(member.token.expires).toString().should.not.equal 'Invalid Date'
         done()
 
+    it 'should log error when guest member saving to database failed', (done)->
+
+      # Hook for model error
+      Member.prototype._save = Member.prototype.save
+      Member.prototype.save = (cb)->
+        cb 'save member document error', this
+
+      spyLog = sinon.spy console, 'log'
+
+      passport.generateGuest (err, member)->
+        should.exist err
+        spyLog.calledOnce.should.be.true
+
+        # Clean Hook
+        Member.prototype.save = Member.prototype._save
+        delete Member.prototype._save
+        done()
+      
+
 describe 'passport-router', ->
   req = null
   app = null

@@ -92,7 +92,7 @@ passport.generateGuest = (cb)->
       expires: expires
 
   guest.save (err, guest)->
-    chalk.red "Create guest member failed: #{err}" if err
+    console.log chalk.red "Create guest member failed: #{err}" if err
 
     cb err, guest
 
