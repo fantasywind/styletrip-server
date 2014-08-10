@@ -95,6 +95,50 @@ describe 'passport-router', ->
     app.use passport.router
     req = request app
 
+  describe 'POST /local', ->
+
+    it 'should bind to passport strategy', (done)->
+      hooker =
+        name: 'local'
+        authenticate: (req, options)->
+          this.redirect 302, '/api/auth/failed'
+
+      spyStrategy = sinon.spy hooker, 'authenticate'
+      passport.use hooker
+
+      req
+        .post '/local'
+        .expect 302
+        .expect 'Location', '/api/auth/failed'
+        .end (err, res)->
+          throw err if err
+
+          spyStrategy.calledOnce.should.be.true
+
+          done()
+
+  describe 'GET /facebook', ->
+
+    it 'should bind to passport strategy', (done)->
+      hooker =
+        name: 'facebook'
+        authenticate: (req, options)->
+          this.redirect 302, '/api/auth/failed'
+
+      spyStrategy = sinon.spy hooker, 'authenticate'
+      passport.use hooker
+
+      req
+        .get '/facebook'
+        .expect 302
+        .expect 'Location', '/api/auth/failed'
+        .end (err, res)->
+          throw err if err
+
+          spyStrategy.calledOnce.should.be.true
+
+          done()
+
   describe 'GET /facebook/callback', ->
 
     it 'should bind to passport strategy', (done)->
