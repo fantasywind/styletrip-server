@@ -4,8 +4,8 @@ mongoose = require 'mongoose'
 randtoken = require 'rand-token'
 chalk = require 'chalk'
 Member = mongoose.model 'Member'
-#require("./passport-local") passport
-#require("./passport-facebook") passport
+require("./passport-local") passport
+require("./passport-facebook") passport
 
 passport.router = router = express.Router()
 

@@ -95,6 +95,28 @@ describe 'passport-router', ->
     app.use passport.router
     req = request app
 
+  describe 'GET /facebook/callback', ->
+
+    it 'should bind to passport strategy', (done)->
+      hooker =
+        name: 'facebook'
+        authenticate: (req, options)->
+          this.redirect 302, '/api/auth/failed'
+
+      spyStrategy = sinon.spy hooker, 'authenticate'
+      passport.use hooker
+
+      req
+        .get '/facebook/callback'
+        .expect 302
+        .expect 'Location', '/api/auth/failed'
+        .end (err, res)->
+          throw err if err
+
+          spyStrategy.calledOnce.should.be.true
+
+          done()
+
   describe 'GET /success', ->
 
     it 'should response error when user session is missing', (done)->
