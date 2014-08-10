@@ -1,3 +1,4 @@
+chalk = require 'chalk'
 Engine = require "#{__dirname}/styletrip-engine"
 Member = require "#{__dirname}/styletrip-member"
 utils = require "#{__dirname}/styletrip-utils"
@@ -43,11 +44,23 @@ scheduleRequestBind = (engine)->
     socket.on 'scheduleQuery',(options)->
       {id, version} = options or {}
 
-      schedule = Engine.Schedule
+      console.log chalk.gray "[Schedule] Find By ID: #{id}" + if version then " ##{version}" else ""
+
+      schedule = new Engine.Schedule
         id: id
         version: version
 
-      socket.emit 'scheduleResult', schedule.toObject()
+      schedule.on 'error', (err)->
+        socket.emit 'failed', err
+
+      schedule.on 'fetched', ->
+        socket.emit 'scheduleResult', 
+          schedule_id: id
+          version: if version then version else 1
+          part: 1
+          next: false
+          err: null
+          chunk: schedule.toObject()
 
     next()
 

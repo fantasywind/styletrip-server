@@ -1,21 +1,39 @@
+_ = require 'lodash'
 uuid = require 'node-uuid'
 net = require 'net'
 chalk = require 'chalk'
 mongoose = require 'mongoose'
+EventEmitter = require('events').EventEmitter
 errorParser = require 'error-message-parser'
 Schedule = mongoose.model 'Schedule'
 Member = mongoose.model 'Member'
 
-class StyletripSchedule
+class StyletripSchedule extends EventEmitter
   constructor: (options)->
-    {@id} = options or {}
+    {@id, @version} = options or {}
 
-    fetchData() if @id
+    @fetchData() if @id
 
   fetchData: ->
+    @emit 'error', errorParser.generateError 409 if !@id
+
+    scheduleId = if @version then "#{id}-#{version}" else @id
+
+    Schedule.findById scheduleId, (err, schedule)=>
+      @emit 'error', errorParser.generateError 401 if err
+
+      if !schedule
+        @emit 'error', errorParser.generateError 409
+      else
+        @data = schedule
+        @emit 'fetched'
 
   toObject: ->
-
+    if !@data
+      @emit 'error', errorParser.generateError 410
+      return false
+    
+    return @data.chunks
 
 class StyletripView
   constructor: (options)->
