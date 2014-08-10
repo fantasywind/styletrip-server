@@ -50,14 +50,13 @@ router.post '/updateToken', (req, res)->
   return res.sendError 408 if !req.body.sid
 
   req.sessionStore.get req.body.sid, (storeErr, session)->
-    return res.sendError 408 if storeErr
+    # storeErr always be null
 
     if session
       expires = new Date session.expires
       if session.token and expires.getTime() >= Date.now()
         req.session.member = session.member
-        req.sessionStore.destroy req.body.sid, (err)->
-          console.log chalk.gray "Destroy session failed." if err
+        req.sessionStore.destroy req.body.sid
 
         res.cookie 'token', session.token,
           path: '/'
