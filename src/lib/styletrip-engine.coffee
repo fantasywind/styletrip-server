@@ -6,6 +6,17 @@ errorParser = require 'error-message-parser'
 Schedule = mongoose.model 'Schedule'
 Member = mongoose.model 'Member'
 
+class StyletripSchedule
+  constructor: (options)->
+    {@id} = options or {}
+
+    fetchData() if @id
+
+  fetchData: ->
+
+  toObject: ->
+
+
 class StyletripView
   constructor: (options)->
 
@@ -21,50 +32,49 @@ class StyletripDailySchedule
 
 class StyletripScheduleRequest
   constructor: (options)->
-    {@socket, @conditions, @engine} = options or {}
+    {@conditions, @engine} = options or {}
 
     @schedules = []
 
-  send: ->
-    throw new Error "You have to initial request object." if !@engine or !@socket or !@conditions
+  send: (@callback)->
+    throw new Error "You have to initial request object." if !@engine or !@conditions
 
     @prepareRequest()
     @engine.schedule @
 
   chunk: (chunk)->
+    console.log chalk.gray "[Engine] ReqID: #{chunk.schedule_id}, Part: #{chunk.chunk_part}, hasNext: #{chunk.has_next}"
     @schedule_id ?= chunk.schedule_id
 
     @schedules.push new StyletripDailySchedule result for result in chunk.results
-    @socket.emit 'scheduleResult',
-      schedule_id: chunk.schedule_id
-      part: chunk.chunk_part
-      next: chunk.has_next
-      err: chunk.err
-      chunk: chunk.results
+    @callback null, chunk
 
     @done() if !chunk.has_next
 
   done: ->
-
     # Caching Schedule Result
     schedule = new Schedule
       _id: @schedule_id
       chunks: @schedules
     schedule.save (err, schedule)=>
       if err
-        @socket.emit 'failed', errorParser.generateError 403 if err
+        @callback errorParser.generateError 403
         console.log chalk.red "Create schedule cache failed: #{err}"
       else
-        # Saving member history
-        if @socket.session.member
-          Member.findById @socket.session.member._id, (err, member)=>
-            return console.error chalk.red 'Cannot find member to add schedule history.' if err
+        @callback null, schedule, true
 
-            if member
-              member.addSchedule @schedule_id, (err)=>
-                @socket.emit 'failed', errorParser.generateError 403 if err
-            else
-              console.log chalk.gray "Cannot find member to add schedule history."
+  saveHistory: (member, done)->
+    console.log chalk.gray "[Engine] Save to member history (Member: #{member._id})"
+    Member.findById member._id, (err, member)=>
+      done 'Cannot find member to add schedule history.' if err
+
+      if member
+        member.addSchedule @schedule_id, (err)=>
+          done errorParser.generateError 403 if err
+
+          done()
+      else
+        done "Cannot find member to add schedule history."
 
   prepareRequest: ->
     @id = uuid.v4()
@@ -158,4 +168,5 @@ class StyletripScheduleConnection
 module.exports = {
   Connection: StyletripScheduleConnection
   Request: StyletripScheduleRequest
+  Schedule: StyletripSchedule
 }
