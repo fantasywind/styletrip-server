@@ -4,8 +4,8 @@ mongoose = require 'mongoose'
 randtoken = require 'rand-token'
 chalk = require 'chalk'
 Member = mongoose.model 'Member'
-require("./passport-local") passport
-require("./passport-facebook") passport
+#require("./passport-local") passport
+#require("./passport-facebook") passport
 
 passport.router = router = express.Router()
 
@@ -33,15 +33,19 @@ router.get '/success', (req, res)->
   token = randtoken.generate 60
   expires = new Date Date.now() + 1209600000 # Two week
 
+  return res.sendError 407 if !req.user
   req.user.token.secret = token
   req.user.token.expires = expires
-  req.user.save (err, user)-> console.error chalk.red "Update user token error" if err
-
-  res.cookie 'token', token,
-    path: '/'
-    expires: expires
-    httpOnly: true
-  res.redirect '/?facebookLogined=success'
+  req.user.save (err, user)->
+    if !err
+      res.cookie 'token', token,
+        path: '/'
+        expires: expires
+        httpOnly: true
+      res.redirect '/?facebookLogined=success'
+    else
+      console.error chalk.red "Update user token error" 
+      res.sendError 407
 
 router.get '/failed', (req, res)->
   res.redirect '/?err=facebookLogin'

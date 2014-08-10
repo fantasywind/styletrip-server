@@ -7,6 +7,7 @@
     "mocha-mongoose": "^1.0.1",
     "rewire": "^2.1.0",
     "should": "^4.0.4",
+    "sinon": "^1.10.3",
     "supertest": "^0.13.0"
   },
   "dependencies": {
@@ -21,6 +22,7 @@
     "errorhandler": "^1.1.1",
     "express": "^4.2.0",
     "express-session": "^1.6.5",
+    "lodash": "^2.4.1",
     "mongoose": "^3.8.12",
     "morgan": "^1.0.1",
     "mysql": "^2.3.2",

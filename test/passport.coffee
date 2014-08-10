@@ -1,6 +1,7 @@
 TEST_MONGO = process.env.TEST_MONGO
 request = require 'supertest'
 express = require 'express'
+sinon = require 'sinon'
 cookieParser = require 'cookie-parser'
 session = require 'express-session'
 errorParser = require 'error-message-parser'
@@ -75,6 +76,7 @@ describe 'passport', ->
 
 describe 'passport-router', ->
   req = null
+  app = null
 
   beforeEach ->
     app = express()
@@ -93,7 +95,99 @@ describe 'passport-router', ->
     app.use passport.router
     req = request app
 
-  describe '/updateToken', ->
+  describe 'GET /success', ->
+
+    it 'should response error when user session is missing', (done)->
+      req
+        .get '/success'
+        .expect 200
+        .end (err, res)->
+          throw err if err
+
+          errObj = errorParser.generateError 407
+
+          res.body.should.have.properties 
+            status: false
+            code: 407
+            level: errObj.level
+            message: errObj.message
+
+          done()
+
+    it 'should generate and save user token to database, store in cookie and redirect to /?facebookLogined=success', (done)->
+      # Spy member
+      member = new Member
+      spySave = sinon.spy member, 'save'
+      
+      # Hook express
+      app = express()
+      app.use errorParser.Parser
+        cwd: "#{__dirname}/../src/errorMessages"
+        lang: 'zh-TW'
+      app.use (req, res, next)->
+        req.user = member
+        next()
+      app.use passport.router
+
+      req = request app
+
+      req
+        .get '/success'
+        .expect 302
+        .expect 'Location', '/?facebookLogined=success'
+        .end (err, res)->
+          throw err if err
+
+          spySave.calledOnce.should.be.true
+
+          should.exist res.header['set-cookie']
+
+          setCookie = false
+          for cookie in res.header['set-cookie']
+            if cookie.match /^token/g
+              cookie.should.match /^token=.*; Path=\/; Expires=.*; HttpOnly$/g
+              setCookie = true
+
+          setCookie.should.be.true
+
+          done()
+
+    it 'should response error when user token store failed', (done)->
+      # Spy member
+      member = new Member
+      member._save = member.save
+      member.save = (cb)->
+        cb 'iamerroronmodelsaving', this
+
+      # Hook express
+      app = express()
+      app.use errorParser.Parser
+        cwd: "#{__dirname}/../src/errorMessages"
+        lang: 'zh-TW'
+      app.use (req, res, next)->
+        req.user = member
+        next()
+      app.use passport.router
+
+      req = request app
+
+      req
+        .get '/success'
+        .expect 200
+        .end (err, res)->
+          throw err if err
+
+          errObj = errorParser.generateError 407
+
+          res.body.should.have.properties 
+            status: false
+            code: 407
+            level: errObj.level
+            message: errObj.message
+
+          done()
+
+  describe 'POST /updateToken', ->
 
     it 'should response error when empty body', (done)->
       req
@@ -256,7 +350,7 @@ describe 'passport-router', ->
 
             done()
 
-  describe '/failed', ->
+  describe 'GET /failed', ->
 
     it 'should route /failed redirect to /?err=facebookLogin', (done)->
       req
