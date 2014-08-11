@@ -47,7 +47,7 @@ MemberSchema.methods.combineGuest = (guest)->
       console.log chalk.gray "Not found guest member to combined."
     else
       # Schedule History
-      @scheduleHistory.addToSet guestAccount.scheduleHistory
+      @scheduleHistory.addToSet scheduleID for scheduleID in guestAccount.scheduleHistory
       @save (err, member)->
         return console.error chalk.red "Update member document error." if err
 
