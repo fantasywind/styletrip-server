@@ -50,28 +50,17 @@ router.get '/success', (req, res)->
 router.get '/failed', (req, res)->
   res.redirect '/?err=facebookLogin'
 
-router.post '/updateToken', (req, res)->
-  return res.sendError 408 if !req.body.sid
+router.get '/updateToken', (req, res)->
 
-  req.sessionStore.get req.body.sid, (storeErr, session)->
-    # storeErr always be null
-
-    if session
-      expires = new Date session.expires
-      if session.token and expires.getTime() >= Date.now()
-        req.session.member = session.member
-        req.sessionStore.destroy req.body.sid
-
-        res.cookie 'token', session.token,
-          path: '/'
-          expires: expires
-          httpOnly: true
-        res.json
-          status: true
-      else
-        res.sendError 407
-    else
-      res.sendError 406
+  if req.session.token and req.session.expires
+    res.cookie 'token', req.session.token,
+      path: '/'
+      expires: new Date req.session.expires
+      httpOnly: true
+    res.json
+      status: true
+  else
+    res.sendError 407
 
 passport.serializeUser (user, done)->
   done null, user.id or user._id

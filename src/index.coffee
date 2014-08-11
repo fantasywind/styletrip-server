@@ -53,6 +53,7 @@ app.set 'port', process.env.PORT || 3030
 app.use compression()
 app.use logger('dev')
 app.use cookieParser()
+app.use sessionBinder.http
 app.use session
   secret: sessionSecret
   resave: true
@@ -111,7 +112,7 @@ server = require('http').Server app
 io = socketIO server
 
 # Bind Session
-io.use (socket, next)-> sessionBinder cookieParser, memoryStore, socket, next
+io.use (socket, next)-> sessionBinder.socket cookieParser, memoryStore, sessionSecret, socket, next
 io.use stMember.socketBinder()
 io.use st.scheduleRequestBind stEngine
 io.use (socket, next)-> socket.sessionStore.set socket.sessionID, socket.session, -> next()

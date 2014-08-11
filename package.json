@@ -34,7 +34,8 @@
     "serve-favicon": "^2.0.1",
     "socket.io": "^1.0.6",
     "uid-safe": "^1.0.1",
-    "xdate": "^0.8.0"
+    "xdate": "^0.8.0",
+    "cookie-signature": "^1.0.4"
   },
   "appPath": "src",
   "engines": {
