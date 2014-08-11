@@ -1,4 +1,5 @@
 TEST_MONGO = process.env.TEST_MONGO
+SESSION_SECRET = process.env.SESSION_SECRET
 request = require 'supertest'
 express = require 'express'
 sinon = require 'sinon'
@@ -7,10 +8,10 @@ session = require 'express-session'
 errorParser = require 'error-message-parser'
 bodyParser = require 'body-parser'
 should = require 'should'
-sessionSecret = 'TESTER_SESSION_SECRET_KEY'
 memoryStore = new session.MemoryStore
 MemberModel = require "../src/models/member"
 mongoose = require 'mongoose'
+signature = require 'cookie-signature'
 Member = mongoose.model 'Member'
 clearDB = require('mocha-mongoose') TEST_MONGO
 
@@ -101,7 +102,7 @@ describe 'passport-router', ->
     app = express()
     app.use cookieParser()
     app.use session
-      secret: sessionSecret
+      secret: SESSION_SECRET
       resave: true
       saveUninitialized: true
       store: memoryStore
@@ -272,45 +273,9 @@ describe 'passport-router', ->
 
           done()
 
-  describe 'POST /updateToken', ->
+  describe 'GET /updateToken', ->
 
-    it 'should response error when empty body', (done)->
-      req
-        .post '/updateToken'
-        .expect 200
-        .end (err, res)->
-          throw err if err
-
-          errObj = errorParser.generateError 408
-
-          res.body.should.have.properties
-            status: false
-            code: 408
-            level: errObj.level
-            message: errObj.message
-
-          done()
-
-    it 'should response error when session not found', (done)->
-      req
-        .post '/updateToken'
-        .send
-          sid: 'sessionidforunittest'
-        .expect 200
-        .end (err, res)->
-          throw err if err
-
-          errObj = errorParser.generateError 406
-
-          res.body.should.have.properties
-            status: false
-            code: 406
-            level: errObj.level
-            message: errObj.message
-
-          done()
-
-    it 'should response error when session token missing', (done)->
+    it 'should response error when session member token missing', (done)->
       sessionId = 'sessionidforunittest'
       memoryStore.set sessionId,
         token: null
@@ -323,9 +288,7 @@ describe 'passport-router', ->
         throw err if err
 
         req
-          .post '/updateToken'
-          .send
-            sid: sessionId
+          .get '/updateToken'
           .expect 200
           .end (err, res)->
             throw err if err
@@ -340,84 +303,23 @@ describe 'passport-router', ->
 
             done()
 
-    it 'should response error when session token expired', (done)->
-      sessionId = 'sessionidforunittest'
-      memoryStore.set sessionId,
-        token: 'logintokenforunittest'
-        expires: Date.now() - 10
-        cookie: 
-            originalMaxAge: null
-            expires: null
-            httpOnly: true
-            path: '/'
-      , (err)->
-        throw err if err
-
-        req
-          .post '/updateToken'
-          .send
-            sid: sessionId
-          .expect 200
-          .end (err, res)->
-            throw err if err
-
-            errObj = errorParser.generateError 407
-
-            res.body.should.have.properties
-              status: false
-              code: 407
-              level: errObj.level
-              message: errObj.message
-
-            done()
-
-    it 'should temporarily token session will be clean', (done)->
-      sessionId = 'sessionidforunittest'
-      memoryStore.set sessionId,
-        token: 'logintokenforunittest'
-        expires: Date.now() + 2000
-        cookie: 
-            originalMaxAge: null
-            expires: null
-            httpOnly: true
-            path: '/'
-      , (err)->
-        throw err if err
-
-        req
-          .post '/updateToken'
-          .send
-            sid: sessionId
-          .expect 200
-          .end (err, res)->
-            throw err if err
-
-            res.body.should.have.property 'status', true
-
-            memoryStore.get sessionId, (err, session)->
-
-              should.not.exist err
-              should.not.exist session
-
-              done()
-
     it "should token will be set on user's cookie", (done)->
       sessionId = 'sessionidforunittest'
       memoryStore.set sessionId,
         token: 'logintokenforunittest'
         expires: Date.now() + 2000
         cookie: 
-            originalMaxAge: null
-            expires: null
-            httpOnly: true
-            path: '/'
+          originalMaxAge: null
+          expires: null
+          httpOnly: true
+          path: '/'
       , (err)->
         throw err if err
 
+        signedSessionId = signature.sign(sessionId, SESSION_SECRET)
         req
-          .post '/updateToken'
-          .send
-            sid: sessionId
+          .get '/updateToken'
+          .set 'Cookie', ["connect.sid=s:#{signedSessionId}"]
           .expect 200
           .end (err, res)->
             throw err if err

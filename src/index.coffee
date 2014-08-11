@@ -47,7 +47,7 @@ stEngine = new st.Connection
 stMember = new st.Member passport
 
 app = express()
-sessionSecret = 'SESSION_SECRET_KEY'
+sessionSecret = process.env.SESSION_SECRET or 'SESSION_SECRET_KEY'
 
 app.set 'port', process.env.PORT || 3030
 app.use compression()
