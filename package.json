@@ -2,6 +2,7 @@
   "name": "styletrip",
   "version": "0.0.0",
   "devDependencies": {
+    "coffee-script": "^1.7.1",
     "istanbul": "^0.3.0",
     "mocha": "^1.21.3",
     "mocha-mongoose": "^1.0.1",
