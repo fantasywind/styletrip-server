@@ -1,5 +1,11 @@
-TEST_MONGO = process.env.TEST_MONGO
-SESSION_SECRET = process.env.SESSION_SECRET
+# get env
+try
+  require "#{__dirname}/support/env"
+catch e
+  console.log 'Not Found: env.js'
+
+TEST_MONGO = process.env.TEST_MONGO or 'mongodb://test:test@localhost/test'
+SESSION_SECRET = process.env.SESSION_SECRET or 'sEcReT4un1ttest'
 request = require 'supertest'
 express = require 'express'
 sinon = require 'sinon'

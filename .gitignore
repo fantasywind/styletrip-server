@@ -2,3 +2,4 @@ node_modules
 dist
 .tmp
 src/config/env.coffee
+test/support/env.js

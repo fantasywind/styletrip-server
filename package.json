@@ -44,6 +44,6 @@
   },
   "scripts": {
     "start": "coffee src/index.coffee",
-    "test": "mocha --compilers coffee:coffee-script/register --require test/support/env --reporter spec --bail --check-leaks test/"
+    "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test/"
   }
 }
