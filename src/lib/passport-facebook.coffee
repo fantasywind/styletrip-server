@@ -1,13 +1,12 @@
 FacebookStrategy = require('passport-facebook').Strategy
-passportConfig = require "#{__dirname}/../config/passport"
 mongoose = require 'mongoose'
 Member = mongoose.model "Member"
 
 module.exports = (passport)->
   passport.use new FacebookStrategy
-    clientID: passportConfig.facebookAppID
-    clientSecret: passportConfig.facebookAppSecret
-    callbackURL: passportConfig.facebookRedirectUrl
+    clientID: process.env.FB_APP_ID
+    clientSecret: process.env.FB_APP_SECRET
+    callbackURL: process.env.FB_REDIRECT_URL
     passReqToCallback: true
   , (req, accessToken, refreshToken, profile, next)->
     

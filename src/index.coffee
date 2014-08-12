@@ -1,3 +1,8 @@
+try
+  require "#{__dirname}/config/env.coffee"
+catch e
+  console.error "Warn: Cannot load env setting file."
+
 express = require 'express'
 path = require 'path'
 logger = require 'morgan'
@@ -15,18 +20,13 @@ socketIO = require 'socket.io'
 errorParser = require 'error-message-parser'
 memoryStore = new session.MemoryStore
 sessionBinder = require "#{__dirname}/lib/session.binder"
-dbConfig = require "#{__dirname}/config/db.json"
-stConfig = require "#{__dirname}/config/styletrip.json"
 
 # MySQL Connection
-mysqlConn = mysql.createConnection "mysql://#{dbConfig.mysql.user}:#{dbConfig.mysql.pass}@#{dbConfig.mysql.host}:#{dbConfig.mysql.port}/#{dbConfig.mysql.database}"
+mysqlConn = mysql.createConnection "mysql://#{process.env.MYSQL_USER}:#{process.env.MYSQL_PASS}@#{process.env.MYSQL_HOST}:#{process.env.MYSQL_PORT}/#{process.env.MYSQL_DATABASE}"
 mysqlConn.connect()
 
 # MongoDB Connection
-mongoConnectArr = []
-for mongo in dbConfig.mongo
-  mongoConnectArr.push "mongodb://#{mongo.user}:#{mongo.pass}@#{mongo.host}:#{mongo.port}/#{mongo.database}"
-mongoose.connect mongoConnectArr.join(',')
+mongoose.connect "mongodb://#{process.env.MONGO_USER}:#{process.env.MONGO_PASS}@#{process.env.MONGO_HOST}:#{process.env.MONGO_PORT}/#{process.env.MONGO_DATABASE}"
 
 mongoose.connection.on 'connected', (e)->
   console.log chalk.gray "MongoDB connected."
@@ -42,8 +42,8 @@ ScheduleModel = require "./models/schedule"
 passport = require "#{__dirname}/lib/passport.coffee"
 st = require "#{__dirname}/lib/styletrip"
 stEngine = new st.Connection
-  port: stConfig.engine.PORT
-  host: stConfig.engine.HOST
+  port: process.env.ENGINE_PORT
+  host: process.env.ENGINE_HOST
 stMember = new st.Member passport
 
 app = express()
