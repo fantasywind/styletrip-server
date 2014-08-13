@@ -64,9 +64,6 @@ MemberSchema.methods.publicInfo = ->
 
 MemberSchema.methods.addSchedule = (scheduleID, done)->
   @scheduleHistory.push scheduleID
-  @save (err, member)->
-    return done err if err
-
-    done null
+  @save (err, member)-> done err, member
 
 module.exports = Member = mongoose.model "Member", MemberSchema
