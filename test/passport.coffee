@@ -94,6 +94,8 @@ describe 'passport', ->
         should.exist err
         spyLog.calledOnce.should.be.true
 
+        spyLog.restore()
+
         # Clean Hook
         Member.prototype.save = Member.prototype._save
         delete Member.prototype._save
