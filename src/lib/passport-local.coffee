@@ -10,20 +10,19 @@ module.exports = (passport)->
     Member.findOne
       email: username
     , (err, member)->
-      return done err if err
-
       # Not Found
       if !member
-        return done null, false,
+        return done err, false,
           message: 'Incorrect username.'
 
       # Check Password
-      if !member.validPasspord password
-        return done null, false,
+      if !member.validPassword password
+        return done err, false,
           message: 'Incorrect pasword.'
 
       # Combined tmp user
-      member.combineGuest req.session.member if req.session.member
-
-      done null, member
+      if req.session.member and req.session.member.guest
+        member.combineGuest req.session.member, (err, member)-> done err, member
+      else
+        done err, member
     

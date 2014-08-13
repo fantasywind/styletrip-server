@@ -21,8 +21,6 @@ module.exports = (passport)->
     Member.findOne
       facebookID: profile.id
     , (err, member)->
-      return done err if err
-
       # Not Found
       if !member
         # Find same mail
@@ -38,19 +36,18 @@ module.exports = (passport)->
                 facebookAccessToken: accessToken
                 name: profile.displayName
 
-              done null, member
+              done err, member
 
             else
               member.facebookID = profile.id
               member.facebookAccessToken = accessToken
               member.name = profile.displayName if !member.name or member.name is ''
               member.save (err, member)->
-                return done err if err
-
-                done null, member
-
-            # Combined tmp user
-            member.combineGuest req.session.member if req.session.member
+                # Combined tmp user
+                if req.session.member and req.session.member.guest
+                  member.combineGuest req.session.member, (err, member)-> done err, member
+                else
+                  done err, member
             
         else
           member = new Member
@@ -59,12 +56,14 @@ module.exports = (passport)->
             name: profile.displayName
 
           # Combined tmp user
-          member.combineGuest req.session.member if req.session.member
-
-          done null, member
+          if req.session.member and req.session.member.guest
+            member.combineGuest req.session.member, (err, member)-> done err, member
+          else
+            done err, member
         
       else
         # Combined tmp user
-        member.combineGuest req.session.member if req.session.member
-
-        done null, member
+        if req.session.member and req.session.member.guest
+          member.combineGuest req.session.member, (err, member)-> done err, member
+        else
+          done err, member

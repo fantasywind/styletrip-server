@@ -33,26 +33,28 @@ MemberSchema.methods.hashPassword = (password)->
 
 # Check password
 MemberSchema.methods.validPassword = (password)->
-  bcrypt.compaseSync password, @password
+  bcrypt.compareSync password, @password
 
-MemberSchema.methods.combineGuest = (guest)->
-  return if !guest or !guest._id
+MemberSchema.methods.combineGuest = (guest, done)->
+  return done new Error "Please pass guest." if !guest or !guest._id
 
-  return console.log chalk.gray "Same combined guest request! Abort." if guest._id is @_id
-
-  Member.findById guest._id, (err, guestAccount)=>
-    console.error chalk.red "Find guest member data failed (#{err})" if err
-
-    if !guestAccount
-      console.log chalk.gray "Not found guest member to combined."
-    else
-      # Schedule History
-      @scheduleHistory.addToSet scheduleID for scheduleID in guestAccount.scheduleHistory
-      @save (err, member)->
-        return console.error chalk.red "Update member document error." if err
-
-        Member.findByIdAndRemove guest._id, (err)->
-          return console.error chalk.red "Remove guest document error." if err
+  if guest._id is @_id
+    done new Error "Same combined guest request! Abort."
+  else
+    Member.findById guest._id, (err, guestAccount)=>
+      if err
+        done new Error "Find guest member data failed (#{err})" 
+      else
+        if !guestAccount
+          done new Error "Not found guest member to combined."
+        else
+          # Schedule History
+          @scheduleHistory.addToSet scheduleID for scheduleID in guestAccount.scheduleHistory
+          @save (err, member)->
+            if err
+              done err
+            else
+              Member.findByIdAndRemove guest._id, (err)-> done err, member
 
 MemberSchema.methods.publicInfo = ->
   return {

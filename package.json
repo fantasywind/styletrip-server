@@ -2,6 +2,7 @@
   "name": "styletrip",
   "version": "0.0.0",
   "devDependencies": {
+    "async": "^0.9.0",
     "coffee-script": "^1.7.1",
     "istanbul": "^0.3.0",
     "mocha": "^1.21.3",
@@ -44,6 +45,6 @@
   },
   "scripts": {
     "start": "coffee src/index.coffee",
-    "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test/"
+    "test": "mocha --compilers coffee:coffee-script/register --ignore-leaks --reporter spec --bail test/"
   }
 }
