@@ -46,7 +46,7 @@
   "scripts": {
     "start": "coffee src/index.coffee",
     "pretest": "coffee -b -c src/config/*.coffee src/lib/*.coffee src/models/*.coffee src/*.coffee test/*.coffee",
-    "test": "mocha --compilers coffee:coffee-script/register --ignore-leaks --reporter spec --bail test/",
+    "test": "istanbul cover node_modules/mocha/bin/_mocha -- --ignore-leaks --reporter spec --bail test/",
     "posttest": "rm src/config/*.js src/lib/*.js src/models/*.js src/*.js test/*.js"
   }
 }
