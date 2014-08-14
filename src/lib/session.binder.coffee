@@ -9,11 +9,7 @@ uid = require('uid-safe').sync
 findCookie = (handshakeInput)->
   key = 'connect.sid'
   handshake = JSON.parse JSON.stringify handshakeInput
-  handshake.secureCookies = (handshake.secureCookies[key].match(/\:(.*)\./) or []).pop() if handshake.secureCookies and handshake.secureCookies[key]
-  handshake.signedCookies[key] = (handshake.signedCookies[key].match(/\:(.*)\./) or []).pop() if handshake.signedCookies and handshake.signedCookies[key]
-  handshake.cookies[key] = (handshake.cookies[key].match(/\:(.*)\./) or []).pop() if handshake.cookies and handshake.cookies[key]
-
-  return (handshake.secureCookies and handshake.secureCookies[key]) or (handshake.signedCookies and handshake.signedCookies[key]) or (handshake.cookies and handshake.cookies[key])
+  return if handshake.cookies[key] then (handshake.cookies[key].match(/\:(.*)\./) or []).pop() else null
 
 module.exports = 
   http: (req, res, next)->
@@ -30,11 +26,10 @@ module.exports =
   socket: (cookieParser, memoryStore, secret, socket, next)->
     handshake = socket.handshake
     if handshake.headers.cookie
-      cookieParser() handshake, {}, (err)->
-        console.error 'could not look up session by key' if err
+      cookieParser() handshake, {}, ->
         sid = findCookie handshake
-        memoryStore.get sid, (storeErr, session)->
-          console.error 'could not look up session by key' if storeErr
+        memoryStore.get sid, (alwaysNull, session)->
+          
           if session
             socket.sessionID = sid
             socket.sessionStore = memoryStore
@@ -56,3 +51,5 @@ module.exports =
               socket.emit 'setCookie',
                 "socket.sid": 's:' + signature.sign sid, secret
               next()
+    else
+      next()
