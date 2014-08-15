@@ -65,17 +65,16 @@ describe 'passport-facebook', ->
 
           done()
 
-  ###
   describe 'facebook strategy GET /facebook/callback', ->
 
-    it 'should ', (done)->
+    it 'should get fake user facebook token', (done)->
+      ###
       req
         .get '/facebook/callback'
         .expect 302
-        #.expect 'Location'
         .end (err, res)->
           throw err if err
 
           console.log res.headers.location
           done()
-  ###
+      ###
