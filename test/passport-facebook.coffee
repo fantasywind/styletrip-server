@@ -68,6 +68,7 @@ describe 'passport-facebook', ->
   describe 'facebook strategy GET /facebook/callback', ->
 
     it 'should get fake user facebook token', (done)->
+      done()
       ###
       req
         .get '/facebook/callback'
