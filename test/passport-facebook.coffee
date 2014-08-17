@@ -18,9 +18,12 @@ memoryStore = new session.MemoryStore
 Member = require "../src/models/member"
 signature = require 'cookie-signature'
 mongoose = require 'mongoose'
+querystring = require 'querystring'
+originPassport = require 'passport'
 clearDB = require('mocha-mongoose') TEST_MONGO
 
 passport = require "#{__dirname}/../src/lib/passport"
+FacebookWrapper = require "#{__dirname}/../src/lib/passport-facebook"
 
 describe 'passport-facebook', ->
   req = null
@@ -66,15 +69,26 @@ describe 'passport-facebook', ->
           done()
 
   describe 'facebook strategy GET /facebook/callback', ->
+    facebookWrapper = null
+
+    beforeEach ->
+      facebookWrapper = new FacebookWrapper originPassport
+
+    it 'should facebookWrapper function exported', ->
+      facebookWrapper.callback.should.be.a.Function
 
     it 'should get fake user facebook token', (done)->
-      ###
       req
         .get '/facebook/callback'
         .expect 302
         .end (err, res)->
           throw err if err
 
-          console.log res.headers.location
+          unescape(res.headers.location).should.match /^https:\/\/www\.facebook\.com\/dialog\/oauth\?(.*)/
+          qs = querystring.parse RegExp.$1
+          qs.should.have.properties
+            response_type: 'code'
+            redirect_uri: 'http://sys.infinitibeat.com/auth/facebook/callback'
+            client_id: '287808734725360'
+
           done()
-      ###

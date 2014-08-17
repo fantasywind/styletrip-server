@@ -2,14 +2,18 @@ FacebookStrategy = require('passport-facebook').Strategy
 mongoose = require 'mongoose'
 Member = mongoose.model "Member"
 
-module.exports = (passport)->
-  passport.use new FacebookStrategy
-    clientID: process.env.FB_APP_ID
-    clientSecret: process.env.FB_APP_SECRET
-    callbackURL: process.env.FB_REDIRECT_URL
-    passReqToCallback: true
-  , (req, accessToken, refreshToken, profile, next)->
-    
+class StrategyWrapper
+  constructor: (passport)->
+    @strategy = new FacebookStrategy
+      clientID: process.env.FB_APP_ID
+      clientSecret: process.env.FB_APP_SECRET
+      callbackURL: process.env.FB_REDIRECT_URL
+      passReqToCallback: true
+    , @callback
+
+    passport.use @strategy
+
+  callback: (req, accessToken, refreshToken, profile, next)->
     # hijack done
     done = (err, member)->
       if err
@@ -67,3 +71,6 @@ module.exports = (passport)->
           member.combineGuest req.session.member, (err, member)-> done err, member
         else
           done err, member
+
+
+module.exports = StrategyWrapper
