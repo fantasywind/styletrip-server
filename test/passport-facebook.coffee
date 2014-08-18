@@ -69,15 +69,8 @@ describe 'passport-facebook', ->
           done()
 
   describe 'facebook strategy GET /facebook/callback', ->
-    facebookWrapper = null
 
-    beforeEach ->
-      facebookWrapper = new FacebookWrapper originPassport
-
-    it 'should facebookWrapper function exported', ->
-      facebookWrapper.callback.should.be.a.Function
-
-    it 'should get fake user facebook token', (done)->
+    it 'should redirect to correct facebook oauth page', (done)->
       req
         .get '/facebook/callback'
         .expect 302
@@ -92,3 +85,48 @@ describe 'passport-facebook', ->
             client_id: '287808734725360'
 
           done()
+
+  describe 'facebook strategy wrapper callback', ->
+    facebookWrapper = null
+    accessToken = 'iamaccesstoken'
+    refreshToken = 'iamrefreshtoken'
+
+    beforeEach ->
+      facebookWrapper = new FacebookWrapper originPassport
+
+    it 'should facebookWrapper function exported', ->
+      facebookWrapper.callback.should.be.a.Function
+
+    it 'should facebook wrapper return created member when session member is missing and find exists facebook account', (done)->
+      req =
+        session: {}
+      profile =
+        id: 238571040192
+      member = new Member
+        facebookID: profile.id
+      member.save (err, member)->
+        throw err if err
+
+        facebookWrapper.callback req, accessToken, refreshToken, profile, (err, member)->
+          should.not.exist err
+          member.facebookID.should.be.equal '238571040192'
+          done()
+
+    it 'should facebook wrapper return created member when session member is missing and find exists facebook account', (done)->
+      req =
+        session:
+          member:
+            guest: false
+      profile =
+        id: 238571040192
+      member = new Member
+        facebookID: profile.id
+      member.save (err, member)->
+        throw err if err
+
+        facebookWrapper.callback req, accessToken, refreshToken, profile, (err, newMember)->
+          should.not.exist err
+          member._id.toString().should.be.equal newMember._id.toString()
+          newMember.facebookID.should.be.equal '238571040192'
+          done()
+
