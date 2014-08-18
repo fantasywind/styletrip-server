@@ -69,6 +69,8 @@ class StrategyWrapper
         # Combined tmp user
         if req.session.member and req.session.member.guest
           member.combineGuest req.session.member, (err, member)-> done err, member
+        else if req.session.member and !req.session.member.guest
+          member.combineExist profile.id, accessToken, profile.displayName, (err, member)-> done err, member
         else
           done err, member
 

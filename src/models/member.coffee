@@ -56,6 +56,9 @@ MemberSchema.methods.combineGuest = (guest, done)->
             else
               Member.findByIdAndRemove guest._id, (err)-> done err, member
 
+MemberSchema.methods.combineExist = (@facebookID, @facebookAccessToken, @name, done)->
+  @save (err, member)-> done err, member
+
 MemberSchema.methods.publicInfo = ->
   return {
     name: @name
