@@ -1,6 +1,7 @@
 should = require 'should'
 async = require 'async'
 sinon = require 'sinon'
+chalk = require 'chalk'
 EventEmitter = require('events').EventEmitter
 
 styletrip = require "#{__dirname}/../src/lib/styletrip"
@@ -50,7 +51,7 @@ describe "styletrip", ->
             catch e
               throw new Error()
           ).should.throw()
-          spyConsole.calledWith("\u001b[2m[Schedule] Find By ID: _notfoundscheduleid #1\u001b[22m").should.be.true
+          spyConsole.calledWith(chalk.dim "[Schedule] Find By ID: _notfoundscheduleid #1").should.be.true
           spyConsole.restore()
           done()
 
@@ -62,6 +63,6 @@ describe "styletrip", ->
           spyConsole = sinon.spy console, 'log'
           socket.emit 'scheduleQuery',
             id: '_notfoundscheduleid'
-          spyConsole.calledWith("\u001b[2m[Schedule] Find By ID: _notfoundscheduleid\u001b[22m").should.be.true
+          spyConsole.calledWith(chalk.dim "[Schedule] Find By ID: _notfoundscheduleid").should.be.true
           spyConsole.restore()
           done()
