@@ -12,7 +12,7 @@ scheduleRequestBind = (engine)->
     # @option options [String] keyword keyword to search
     # @option options [Array] dates timestamp array of vacation date
     socket.on 'scheduleRequest', (options)->
-      {keyword, dates} = options or {}
+      {keyword, dates} = options
 
       request = new Engine.Request
         engine: engine
@@ -45,7 +45,7 @@ scheduleRequestBind = (engine)->
     # @option options [String] id schedule id to query
     # @option options [Number] version version to query
     socket.on 'scheduleQuery',(options)->
-      {id, version} = options or {}
+      {id, version} = options
 
       console.log chalk.gray "[Schedule] Find By ID: #{id}" + if version then " ##{version}" else ""
 

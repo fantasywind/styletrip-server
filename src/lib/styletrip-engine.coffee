@@ -17,7 +17,7 @@ viewType =
 
 class StyletripSchedule extends EventEmitter
   constructor: (options)->
-    {@id, @version} = options or {}
+    {@id, @version} = options
 
     @fetchData() if @id
 
@@ -71,7 +71,7 @@ class StyletripDailySchedule
 
 class StyletripScheduleRequest extends EventEmitter
   constructor: (options)->
-    {@conditions, @engine} = options or {}
+    {@conditions, @engine} = options
 
     @schedules = []
 
@@ -137,7 +137,7 @@ class StyletripScheduleRequest extends EventEmitter
 
 class StyletripScheduleConnection
   constructor: (options)->
-    {port, host} = options or {}
+    {port, host} = options
 
     @createSocket port, host
 
