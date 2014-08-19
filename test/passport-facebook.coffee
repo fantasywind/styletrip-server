@@ -94,8 +94,17 @@ describe 'passport-facebook', ->
     beforeEach ->
       facebookWrapper = new FacebookWrapper originPassport
 
-    it 'should facebookWrapper function exported', ->
+    it 'should facebook wrapper function exported', ->
       facebookWrapper.callback.should.be.a.Function
+      facebookWrapper.done.should.be.a.Function
+
+    it 'should facebook wrapper done function export error', (done)->
+      error = new Error 'Test Error'
+      next = facebookWrapper.done {}, (err, member)->
+        err.should.be.an.Error
+        err.toString().should.be.equal error.toString()
+        done()
+      next error
 
     it 'should facebook wrapper return created member when session member is missing and find exists facebook account', (done)->
       req =
@@ -112,7 +121,7 @@ describe 'passport-facebook', ->
           member.facebookID.should.be.equal '238571040192'
           done()
 
-    it 'should facebook wrapper return created member when session member is missing and find exists facebook account', (done)->
+    it 'should facebook wrapper return combine exists member when session member is missing and find exists facebook account', (done)->
       req =
         session:
           member:
@@ -129,4 +138,139 @@ describe 'passport-facebook', ->
           member._id.toString().should.be.equal newMember._id.toString()
           newMember.facebookID.should.be.equal '238571040192'
           done()
+
+    it 'should facebook wrapper combine guest member when find exists facebook account', (done)->
+      req =
+        session:
+          member:
+            guest: true
+      profile =
+        id: 2385710412323
+      member = new Member
+        facebookID: 2385710412323
+      member.save (err, member)->
+        throw err if err
+
+        guest = new Member
+          guest: true
+        guest.save (err, guest)->
+          req.session.member._id = guest._id
+
+          facebookWrapper.callback req, accessToken, refreshToken, profile, (err, newMember)->
+            should.not.exist err
+            member._id.toString().should.be.equal newMember._id.toString()
+            done()
+
+    it 'should create a new member when cannot find a match facebook account without combind if session member is undefined', (done)->
+      req =
+        session: {}
+      profile =
+        id: 2385710412323
+        displayName: 'iamdisplayname'
+      
+      facebookWrapper.callback req, accessToken, refreshToken, profile, (err, newMember)->
+        should.not.exist err
+        newMember.facebookID.should.be.equal profile.id.toString()
+        newMember.facebookAccessToken.should.be.equal accessToken
+        newMember.name.should.be.equal profile.displayName
+        done()
+
+    it 'should create a new member and combined guest data when cannot find a match facebook account', (done)->
+      req =
+        session:
+          member:
+            guest: true
+      profile =
+        id: 2385710412323
+        displayName: 'iamdisplayname'
+      guest = new Member
+        guest: true
+        scheduleHistory: ['1d3', 'ywer']
+      guest.save (err, guest)->
+        throw err if err
+        req.session.member._id = guest._id
+      
+        facebookWrapper.callback req, accessToken, refreshToken, profile, (err, newMember)->
+          should.not.exist err
+          newMember.facebookID.should.be.equal profile.id.toString()
+          newMember.facebookAccessToken.should.be.equal accessToken
+          newMember.name.should.be.equal profile.displayName
+          newMember.scheduleHistory.should.containEql '1d3'
+          newMember.scheduleHistory.should.containEql 'ywer'
+          newMember.scheduleHistory.should.not.containEql '1d3a'
+          done()
+
+    it 'should create a new member when cannot find a match facebook account but match a exist member with matched email', (done)->
+      req =
+        session: {}
+      profile =
+        id: 2385710412323
+        displayName: 'iamdisplayname'
+        email: 'sample@abc.com'
+      member = new Member
+        email: 'sample@abc.com'
+        name: 'defaultName'
+        scheduleHistory: ['1d3', 'ywer']
+      member.save (err, member)->
+        throw err if err
+        facebookWrapper.callback req, accessToken, refreshToken, profile, (err, newMember)->
+          should.not.exist err
+          newMember.facebookID.should.be.equal profile.id.toString()
+          newMember.facebookAccessToken.should.be.equal accessToken
+          newMember.name.should.be.equal 'defaultName'
+          done()
+
+    it 'should combind guest when get invalid email and cannot find a match facebook account but match a exist member with matched email', (done)->
+      req =
+        session:
+          member:
+            guest: true
+      profile =
+        id: 2385710412323
+        displayName: 'iamdisplayname'
+        email: 'sample@abc.com'
+      member = new Member
+        email: 'sample@abc.com'
+        scheduleHistory: ['1d3', 'ywer']
+      member.save (err, member)->
+        throw err if err
+        guest = new Member
+          guest: true
+        guest.save (err, guest)->
+          throw err if err
+
+          req.session.member._id = guest._id
+          facebookWrapper.callback req, accessToken, refreshToken, profile, (err, newMember)->
+            should.not.exist err
+            newMember.facebookID.should.be.equal profile.id.toString()
+            newMember.facebookAccessToken.should.be.equal accessToken
+            newMember.name.should.be.equal profile.displayName
+            done()
+
+    it 'should create member when facebook account matched and email matched member not found', (done)->
+      req =
+        session:
+          member:
+            guest: true
+      profile =
+        id: 2385710412323
+        displayName: 'iamdisplayname'
+        email: 'sample123@abc.com'
+      member = new Member
+        email: 'sample@abc.com'
+        scheduleHistory: ['1d3', 'ywer']
+      member.save (err, member)->
+        throw err if err
+        guest = new Member
+          guest: true
+        guest.save (err, guest)->
+          throw err if err
+
+          req.session.member._id = guest._id
+          facebookWrapper.callback req, accessToken, refreshToken, profile, (err, newMember)->
+            should.not.exist err
+            newMember.facebookID.should.be.equal profile.id.toString()
+            newMember.facebookAccessToken.should.be.equal accessToken
+            newMember.name.should.be.equal profile.displayName
+            done()
 

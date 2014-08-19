@@ -13,14 +13,17 @@ class StrategyWrapper
 
     passport.use @strategy
 
-  callback: (req, accessToken, refreshToken, profile, next)->
-    # hijack done
-    done = (err, member)->
+  done: (session, next)->
+    return (err, member)->
       if err
         next err
       else
-        req.session.member = member
+        session.member = member
         next null, member
+
+  callback: (req, accessToken, refreshToken, profile, next)->
+    # hijack done
+    done = @done req.session, next
 
     Member.findOne
       facebookID: profile.id
@@ -32,7 +35,6 @@ class StrategyWrapper
           Member.findOne
             email: profile.email
           , (err, member)->
-            return done err if err
 
             if !member
               member = new Member
@@ -45,7 +47,7 @@ class StrategyWrapper
             else
               member.facebookID = profile.id
               member.facebookAccessToken = accessToken
-              member.name = profile.displayName if !member.name or member.name is ''
+              member.name = if !!member.name then member.name else profile.displayName
               member.save (err, member)->
                 # Combined tmp user
                 if req.session.member and req.session.member.guest
