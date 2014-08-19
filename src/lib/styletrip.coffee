@@ -47,7 +47,7 @@ scheduleRequestBind = (engine)->
     socket.on 'scheduleQuery',(options)->
       {id, version} = options
 
-      console.log chalk.gray "[Schedule] Find By ID: #{id}" + if version then " ##{version}" else ""
+      console.log chalk.dim "[Schedule] Find By ID: #{id}" + if version then " ##{version}" else ""
 
       schedule = new Engine.Schedule
         id: id

@@ -50,7 +50,7 @@ describe "styletrip", ->
             catch e
               throw new Error()
           ).should.throw()
-          spyConsole.calledWith("\u001b[90m[Schedule] Find By ID: _notfoundscheduleid #1\u001b[39m").should.be.true
+          spyConsole.calledWith("\u001b[2m[Schedule] Find By ID: _notfoundscheduleid #1\u001b[22m").should.be.true
           spyConsole.restore()
           done()
 
@@ -62,6 +62,6 @@ describe "styletrip", ->
           spyConsole = sinon.spy console, 'log'
           socket.emit 'scheduleQuery',
             id: '_notfoundscheduleid'
-          spyConsole.calledWith("\u001b[90m[Schedule] Find By ID: _notfoundscheduleid\u001b[39m").should.be.true
+          spyConsole.calledWith("\u001b[2m[Schedule] Find By ID: _notfoundscheduleid\u001b[22m").should.be.true
           spyConsole.restore()
           done()

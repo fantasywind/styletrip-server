@@ -10,7 +10,7 @@ generateGuest = (socket)->
     if err
       socket.emit 'failed', errorParser.generateError 401, err
     else
-      console.log chalk.gray "Generated guest: #{guest._id}"
+      console.log chalk.dim "Generated guest: #{guest._id}"
       member = guest
       socket.session.member = member
       socket.session.token = guest.token.secret
@@ -67,7 +67,7 @@ class StyletripMemberController
 
       if member
         session.member = member
-        console.log chalk.gray "Cookie Logined: #{session.member.id}"
+        console.log chalk.dim "Cookie Logined: #{session.member.id}"
         cb null if cb
       else
         cb 'Not Found' if cb

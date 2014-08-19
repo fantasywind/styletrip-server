@@ -82,7 +82,7 @@ class StyletripScheduleRequest extends EventEmitter
     @engine.schedule @
 
   chunk: (chunk)->
-    console.log chalk.gray "[Engine] ReqID: #{chunk.schedule_id}, Part: #{chunk.chunk_part}, hasNext: #{chunk.has_next}"
+    console.log chalk.dim "[Engine] ReqID: #{chunk.schedule_id}, Part: #{chunk.chunk_part}, hasNext: #{chunk.has_next}"
     @schedule_id ?= chunk.schedule_id
 
     chunkSchedules = []
@@ -114,7 +114,7 @@ class StyletripScheduleRequest extends EventEmitter
         @emit 'end'
 
   saveHistory: (member, done)->
-    console.log chalk.gray "[Engine] Save to member history (Member: #{member._id})"
+    console.log chalk.dim "[Engine] Save to member history (Member: #{member._id})"
     Member.findById member._id, (err, member)=>
       done 'Cannot find member to add schedule history.' if err
 
@@ -164,7 +164,7 @@ class StyletripScheduleConnection
 
       @retryTimeout = @retryTimeout * 2
       if @retryTimeout < 300000
-        console.log chalk.gray "[Schedule Engine] Retry connection in #{@retryTimeout / 1000} second(s)"
+        console.log chalk.dim "[Schedule Engine] Retry connection in #{@retryTimeout / 1000} second(s)"
         setTimeout =>
           @createSocket port, host
         , @retryTimeout
@@ -213,7 +213,7 @@ class StyletripScheduleConnection
   schedule: (request)->
     @requestPool[request.id] = request
     @conn.write JSON.stringify(request.payload) + String.fromCharCode(5)
-    console.log chalk.gray "Send Request: #{request.payload.keyword} when #{request.payload.date.join(', ')}"
+    console.log chalk.dim "Send Request: #{request.payload.keyword} when #{request.payload.date.join(', ')}"
 
 module.exports = {
   Connection: StyletripScheduleConnection
