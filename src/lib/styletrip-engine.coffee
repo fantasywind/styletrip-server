@@ -19,43 +19,46 @@ class StyletripSchedule extends EventEmitter
   constructor: (options)->
     {@id, @version} = options
 
-    @fetchData() if @id
+    if @id
+      @fetchData()
+    else
+      console.log chalk.yellow '[Engine] init schedule instance without id'
 
   fetchData: ->
-    @emit 'error', errorParser.generateError 409 if !@id
+    if !@id
+      @emit 'error', errorParser.generateError 409
+    else
+      scheduleId = if @version then "#{id}-#{version}" else @id
 
-    scheduleId = if @version then "#{id}-#{version}" else @id
+      Schedule.findById scheduleId, (err, schedule)=>
 
-    Schedule.findById scheduleId, (err, schedule)=>
-      @emit 'error', errorParser.generateError 401 if err
-
-      if !schedule
-        @emit 'error', errorParser.generateError 409
-      else
-        @data = schedule
-        @emit 'fetched'
+        if !schedule
+          @emit 'error', errorParser.generateError 409
+        else
+          @data = schedule
+          @emit 'fetched'
 
   toObject: ->
     if !@data
       @emit 'error', errorParser.generateError 410
       return false
-    
-    return @data.chunks
+    else
+      return @data.chunks
 
 class StyletripFootprint
   constructor: ->
 
 class StyletripView extends StyletripFootprint
   constructor: (options)->
-    {@gps, @name, @profile, @region, @serial, @spend_time, @start_time, @type, @view_id} = options or {}
+    {@gps, @name, @profile, @region, @serial, @spend_time, @start_time, @type, @view_id} = options
 
 class StyletripRoute extends StyletripFootprint
   constructor: (options)->
-    {@transport, @serial, @spend_time, @start_time, @type} = options or {}
+    {@transport, @serial, @spend_time, @start_time, @type} = options
 
 class StyletripDailySchedule
   constructor: (options)->
-    {date, @main_view, @from, daily_cost, schedule} = options or {}
+    {date, @main_view, @from, daily_cost, schedule} = options
     
     date = parseInt date, 10
     @date = new XDate(date).toString "yyyy-MM-dd"
@@ -76,14 +79,15 @@ class StyletripScheduleRequest extends EventEmitter
     @schedules = []
 
   send: ->
-    throw new Error "You have to initial request object." if !@engine or !@conditions
-
-    @prepareRequest()
-    @engine.schedule @
+    if !@engine or !@conditions
+      throw new Error "You have to initial request object."
+    else
+      @prepareRequest()
+      @engine.schedule @
 
   chunk: (chunk)->
-    console.log chalk.dim "[Engine] ReqID: #{chunk.schedule_id}, Part: #{chunk.chunk_part}, hasNext: #{chunk.has_next}"
-    @schedule_id ?= chunk.schedule_id
+    @schedule_id = if !!@schedule_id then @schedule_id else chunk.schedule_id
+    console.log chalk.dim "[Engine] ReqID: #{@schedule_id}, Part: #{chunk.chunk_part}, hasNext: #{chunk.has_next}"
 
     chunkSchedules = []
     for result in chunk.results
@@ -219,4 +223,8 @@ module.exports = {
   Connection: StyletripScheduleConnection
   Request: StyletripScheduleRequest
   Schedule: StyletripSchedule
+  Footprint: StyletripFootprint
+  View: StyletripView
+  Route: StyletripRoute
+  DailySchedule: StyletripDailySchedule
 }
