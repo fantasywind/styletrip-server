@@ -9,6 +9,7 @@ should = require 'should'
 XDate = require 'xdate'
 sinon = require 'sinon'
 chalk = require 'chalk'
+net = require 'net'
 mongoose = require 'mongoose'
 errorParser = require 'error-message-parser'
 errorParser.Parser
@@ -431,3 +432,223 @@ describe 'styletrip engine', ->
           dates: [Date.now()]
 
         request.prepareRequest().should.have.property 'from', {}
+
+  describe 'Class: StyletripScheduleConnection', ->
+    server = connection = null
+    SERVER_PORT = 9872
+
+    beforeEach (done)->
+      server = net.createServer()
+      server.on 'listening', done
+      server.on 'connection', (socket)->
+        socket.write 'chunkTest'
+      server.listen SERVER_PORT
+
+    afterEach (done)->
+      connection.conn.destroy()
+      server.close done
+
+    it 'should create instance and create socket', ->
+      connection = new styletripEngine.Connection
+        host: '127.0.0.1'
+        port: SERVER_PORT
+      connection.constructor.name.should.be.equal 'StyletripScheduleConnection'
+
+    describe '#createSocket()', ->
+
+      it 'should log info when schedule connected', (done)->
+        spyConsole = sinon.spy console, 'log'
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT
+          host: '127.0.0.1'
+
+        connection.conn.on 'connect', -> 
+          spyConsole.calledWith(chalk.green "[Schedule Engine] Connection Created.").should.be.true
+          spyConsole.restore()
+          done()
+
+      it 'should throw error when schedule connect failed', (done)->
+        spyConsoleLog = sinon.spy console, 'log'
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT + 1
+          host: '127.0.0.1'
+
+        connection.conn.on 'error', -> 
+          connection.retryTimeout = 300000
+          spyConsoleLog.calledWith(chalk.dim "[Schedule Engine] Retry connection in 1 second(s)").should.be.true
+          spyConsoleLog.restore()
+
+          done()
+
+      it 'should throw error when schedule connect failed and retry many times', (done)->
+        spyConsoleError = sinon.spy console, 'error'
+
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT + 1
+          host: '127.0.0.1'
+        connection.retryTimeout = 300000
+
+        connection.conn.on 'error', -> 
+          spyConsoleError.calledWith(chalk.red "[Schedule Engine] Failed retry connection :(").should.be.true
+          spyConsoleError.restore()
+
+          done()
+
+      it 'should parseScheduleResult on data', (done)->
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT
+          host: '127.0.0.1'
+
+        connection.parseScheduleResult = ->
+          connection.chunkPool.should.be.equal 'chunkTest'
+          done()
+
+    describe '#parseScheduleResult()', ->
+
+      it 'should throw error when JSON format error', (done)->
+        spyConsoleError = sinon.spy console, 'error'
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT
+          host: '127.0.0.1'
+
+        # hook
+        originalParseScheduleResult = connection.parseScheduleResult.bind connection
+        connection.splitChunk = -> 'Invalid JSON'
+        connection.parseScheduleResult = ->
+          originalParseScheduleResult()
+
+          spyConsoleError.calledWith(chalk.red "Invalid result! Please check engine server.").should.be.true
+          spyConsoleError.restore()
+
+          done()
+
+      it 'should throw error when request not found', (done)->
+        spyConsole = sinon.spy console, 'log'
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT
+          host: '127.0.0.1'
+
+        # hook
+        originalParseScheduleResult = connection.parseScheduleResult.bind connection
+        connection.splitChunk = -> [
+          '{"request_id": "notfoundrequestid"}'
+        ]
+        connection.parseScheduleResult = ->
+          originalParseScheduleResult()
+
+          spyConsole.calledWith(chalk.yellow "Not Found Request: notfoundrequestid").should.be.true
+          spyConsole.restore()
+
+          done()
+
+      it 'should call chunk when request parsed', (done)->
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT
+          host: '127.0.0.1'
+
+        # hook
+        originalParseScheduleResult = connection.parseScheduleResult.bind connection
+        connection.requestPool =
+          existrequestid:
+            chunk: (result)->
+              result.should.have.property 'request_id', 'existrequestid'
+
+              done()
+        connection.splitChunk = -> [
+          '{"request_id": "existrequestid"}'
+        ]
+
+      it 'should call done when request failed', (done)->
+        spyConsole = sinon.spy console, 'log'
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT
+          host: '127.0.0.1'
+
+        # hook
+        originalParseScheduleResult = connection.parseScheduleResult.bind connection
+        connection.requestPool =
+          existrequestid:
+            done: (err)->
+              err.toString().should.be.equal 'Error: Engine Error: (404) errorfortest'
+              spyConsole.restore()
+
+              done()
+        connection.splitChunk = -> [
+          '{"request_id": "existrequestid", "err": "errorfortest", "code": 404}'
+        ]
+
+      it 'should call done and set for code 405 when request failed without error code', (done)->
+        spyConsole = sinon.spy console, 'log'
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT
+          host: '127.0.0.1'
+
+        # hook
+        connection.requestPool =
+          existrequestid:
+            done: (err)->
+              err.toString().should.be.equal 'Error: Engine Error: (405) errorfortest'
+              spyConsole.calledWith(chalk.red 'Error: Engine Error: (405) errorfortest').should.be.true
+              spyConsole.restore()
+
+              done()
+        connection.splitChunk = -> [
+          '{"request_id": "existrequestid", "err": "errorfortest"}'
+        ]
+
+    describe '#splitChunk()', ->
+
+      it 'should return false if chunkPool is undefined', (done)->
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT
+          host: '127.0.0.1'
+        connection.parseScheduleResult = ->
+          connection.chunkPool = undefined
+          connection.splitChunk().should.be.false
+
+          done()
+
+      it 'should split chunkPool', (done)->
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT
+          host: '127.0.0.1'
+        connection.parseScheduleResult = ->
+          connection.chunkPool = '{"request_id": "testrequestid"}' + String.fromCharCode(5)
+          result = connection.splitChunk()
+          result.should.length 1
+          result[0].should.be.equal '{"request_id": "testrequestid"}'
+          connection.chunkPool.should.be.equal ''
+
+          done()
+
+    describe '#schedule()', ->
+
+      it 'should log request sent and write JSON to socket', (done)->
+        spyConsole = sinon.spy console, 'log'
+
+        connection = new styletripEngine.Connection
+          port: SERVER_PORT
+          host: '127.0.0.1'
+
+        connection.conn.write = (requestJSON)->
+          requestJSON.should.match new RegExp String.fromCharCode(5)
+
+        connection.parseScheduleResult = ->
+          dateStamp = Date.now()
+
+          request =
+            id: 'requestID'
+            payload:
+              keyword: 'iamkeyword'
+              date: [dateStamp]
+
+          connection.schedule request
+
+          connection.requestPool['requestID'].payload.should.have.properties
+            keyword: 'iamkeyword'
+            date: [dateStamp]
+
+          spyConsole.calledWith(chalk.dim "Send Request: iamkeyword when #{dateStamp}").should.be.true
+          spyConsole.restore()
+
+          done()

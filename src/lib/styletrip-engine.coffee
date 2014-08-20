@@ -144,7 +144,7 @@ class StyletripScheduleConnection
     @createSocket port, host
 
   createSocket: (port, host)->
-    @retryTimeout ?= 500
+    @retryTimeout = 500
     @conn = new net.Socket
 
     @conn.bufferSize = 1024
@@ -157,7 +157,6 @@ class StyletripScheduleConnection
     @chunkPool = ''
 
     @conn.on 'connect', =>
-      @retryTimeout = 500
       console.log chalk.green "[Schedule Engine] Connection Created."
 
     @conn.on 'error', (msg)=>
@@ -167,12 +166,9 @@ class StyletripScheduleConnection
       @retryTimeout = @retryTimeout * 2
       if @retryTimeout < 300000
         console.log chalk.dim "[Schedule Engine] Retry connection in #{@retryTimeout / 1000} second(s)"
-        setTimeout =>
-          @createSocket port, host
-        , @retryTimeout
+        setTimeout @createSocket.bind(@, port, host), @retryTimeout
       else
         console.error chalk.red "[Schedule Engine] Failed retry connection :("
-        throw new Error '[Schedule Engine] Error on connect.'
 
     @conn.on 'data', (chunk)=>
       @chunkPool += chunk
@@ -185,32 +181,34 @@ class StyletripScheduleConnection
       try
         result = JSON.parse result
       catch e
-        throw new Error 'Invalid result! Please check engine server.'
+        result = ''
+        return console.error chalk.red 'Invalid result! Please check engine server.'
 
       request = @requestPool[result.request_id]
 
       if request
         if result.err
-          result.code ?= 405
+          result.code = if !!result.code then result.code else 405
           err = new Error "Engine Error: (#{result.code}) #{result.err}"
           err.code = result.code
           console.log chalk.red err.toString()
-          return @requestPool[result.request_id].done err
-
-        request.chunk result
+          return request.done err
+        else
+          request.chunk result
           
       else
         console.log chalk.yellow "Not Found Request: #{result.request_id}"
       
   splitChunk: ->
-    return false if !@chunkPool
+    if !@chunkPool
+      return false
+    else
+      resultArr = []
+      while ~(idx = @chunkPool.indexOf String.fromCharCode(5))
+        resultArr.push @chunkPool.substr(0, idx)
+        @chunkPool = @chunkPool.substr idx + 1
 
-    resultArr = []
-    while ~(idx = @chunkPool.indexOf String.fromCharCode(5))
-      resultArr.push @chunkPool.substr(0, idx)
-      @chunkPool = @chunkPool.substr idx + 1
-
-    return resultArr
+      return resultArr
 
   schedule: (request)->
     @requestPool[request.id] = request
