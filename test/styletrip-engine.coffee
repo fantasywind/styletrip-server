@@ -14,6 +14,7 @@ errorParser = require 'error-message-parser'
 errorParser.Parser
   cwd: "#{__dirname}/../src/errorMessages"
   lang: 'zh-TW'
+Member = require "../src/models/member"
 Schedule = require "../src/models/schedule"
 clearDB = require('mocha-mongoose') TEST_MONGO
 EventEmitter = require('events').EventEmitter
@@ -329,3 +330,104 @@ describe 'styletrip engine', ->
           chunk_part: 1
           results: []
 
+    describe '#done()', ->
+
+      it 'should create schedule after call done', (done)->
+        request = new styletripEngine.Request {}
+
+        request.schedule_id = '_thisisatestscheduleID'
+        request.conditions =
+          keyword: 'iamquerykeyword'
+          dates: [
+            Date.now()
+          ]
+        request.payload =
+          place: 'taipei'
+        request.schedules = []
+
+        request.on 'end', ->
+          Schedule.findById request.schedule_id, (err, schedule)->
+            throw err if err
+            schedule.should.be.exist
+            done()
+
+        request.done()
+
+      it 'should throw error when call done and creating schedule', (done)->
+        request = new styletripEngine.Request {}
+
+        request.schedule_id = '_thisisatestscheduleID'
+        request.conditions =
+          keyword: 'iamquerykeyword'
+          dates: true
+        request.payload =
+          place: 'taipei'
+        request.schedules = []
+
+        request.on 'error', (data)->
+          data.should.have.properties
+            status: false
+            code: 403
+            level: 1
+            message: '無法記錄會員行程規劃資訊。'
+          done()
+
+        request.done()
+
+    describe '#saveHistory()', ->
+
+      it 'should throw error if member._id is invalid', (done)->
+        request = new styletripEngine.Request {}
+        member =
+          _id: 'iaminvalidmemberid'
+
+        request.saveHistory member, (err)->
+          err.should.be.equal 'Cannot find member to add schedule history.'
+          done()
+
+      it 'should throw error if member not found', (done)->
+        request = new styletripEngine.Request {}
+        member =
+          _id: new mongoose.Types.ObjectId()
+
+        request.saveHistory member, (err)->
+          err.should.be.equal 'Cannot find member to add schedule history.'
+          done()
+
+      it 'should add schedule to history list', (done)->
+        request = new styletripEngine.Request {}
+        member = new Member
+        member.save (err, member)->
+          throw err if err
+
+          request.schedule_id = '30fs'
+          request.saveHistory member, (err)->
+            should.not.exist err
+            done()
+
+    describe '#prepareRequest()', ->
+
+      it 'should generate payload', ->
+        request = new styletripEngine.Request {}
+
+        request.conditions =
+          keyword: 'iamkeyword'
+          dates: [Date.now()]
+          place: 
+            lat: 20.12471324
+            lng: 122.23423451
+
+        request.prepareRequest().should.have.property 'keyword', request.conditions.keyword
+        request.prepareRequest().should.have.property 'date', request.conditions.dates
+        request.prepareRequest().should.have.property 'from', request.conditions.place
+        request.prepareRequest().request_id.should.be.exist
+        request.prepareRequest().request_id.should.be.equal request.id
+
+      it 'should generate payload and auto set from to empty object', ->
+        request = new styletripEngine.Request {}
+
+        request.conditions =
+          keyword: 'iamkeyword'
+          dates: [Date.now()]
+
+        request.prepareRequest().should.have.property 'from', {}

@@ -120,15 +120,13 @@ class StyletripScheduleRequest extends EventEmitter
   saveHistory: (member, done)->
     console.log chalk.dim "[Engine] Save to member history (Member: #{member._id})"
     Member.findById member._id, (err, member)=>
-      done 'Cannot find member to add schedule history.' if err
-
-      if member
-        member.addSchedule @schedule_id, (err)=>
-          done errorParser.generateError 403 if err
-
-          done()
+      if err
+        done 'Cannot find member to add schedule history.'
       else
-        done "Cannot find member to add schedule history."
+        if member
+          member.addSchedule @schedule_id, (err)=> done err
+        else
+          done "Cannot find member to add schedule history."
 
   prepareRequest: ->
     @id = uuid.v4()
