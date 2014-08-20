@@ -441,12 +441,15 @@ describe 'styletrip engine', ->
       server = net.createServer()
       server.on 'listening', done
       server.on 'connection', (socket)->
+        console.log 'Created Test Server'
         socket.write 'chunkTest'
       server.listen SERVER_PORT
 
     afterEach (done)->
-      connection.conn.destroy()
-      server.close done
+      connection.conn.end()
+      server.close ->
+        console.log 'Closed Test Server'
+        done()
 
     it 'should create instance and create socket', ->
       connection = new styletripEngine.Connection
