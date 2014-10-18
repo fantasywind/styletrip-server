@@ -46,7 +46,7 @@
   "scripts": {
     "start": "coffee src/index.coffee",
     "pretest": "coffee -b -c src/lib/*.coffee src/models/*.coffee src/*.coffee test/*.coffee",
-    "test": "FB_APP_ID=287808734725360 FB_APP_SECRET=10211b89fefc64669bc4930182e3ef28 FB_REDIRECT_URL=http://sys.infinitibeat.com/auth/facebook/callback NODE_ENV=test SESSION_SECRET=sEcReT4un1ttest TEST_MONGO=mongodb://test:test@1.34.9.252/test istanbul cover node_modules/mocha/bin/_mocha -- --ignore-leaks --reporter spec --bail test/",
+    "test": "FB_APP_ID=287808734725360 FB_APP_SECRET=10211b89fefc64669bc4930182e3ef28 FB_REDIRECT_URL=http://sys.infinitibeat.com/auth/facebook/callback NODE_ENV=test SESSION_SECRET=sEcReT4un1ttest TEST_MONGO=mongodb://test:test@220.133.120.140/test istanbul cover node_modules/mocha/bin/_mocha -- --ignore-leaks --reporter spec --bail test/",
     "posttest": "rm src/lib/*.js src/models/*.js src/*.js test/*.js"
   }
 }
